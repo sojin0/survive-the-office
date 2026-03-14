@@ -19,11 +19,12 @@ type AppStore = {
   removeEvent: (id: string) => void;
   setOneLiner: (text: string) => void;
   retire: () => void;
+  viewDashboard: () => void;
   resetDay: () => void;
   hydrate: () => void;
 };
 
-const INITIAL_HP = 100;
+const INITIAL_HP = 80;
 const INITIAL_ONE_LINER = '오늘도 살아남는 중... 🫡';
 
 export const useAppStore = create<AppStore>((set, get) => ({
@@ -42,7 +43,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const newLog: EventLog = { ...log, id: crypto.randomUUID() };
     const nextLog = [newLog, ...eventLog];
     const weatherState = getWeatherState(newHp);
-    // 이벤트 기록 시 한줄 상태 자동 업데이트
     const autoOneLiner = log.hpDelta >= 0
       ? `${log.emoji} ${log.name} 완료!`
       : `${log.emoji} ${log.name}... 힘들다`;
@@ -98,6 +98,17 @@ export const useAppStore = create<AppStore>((set, get) => ({
       isRetired: true, survivalGrade: grade, date: today,
     });
     saveDayToHistory({ date: today, hp, minHp, eventLog, weatherState, survivalGrade: grade });
+  },
+
+  // HP/기록 유지, isRetired만 false로 — 대시보드 열람용
+  viewDashboard() {
+    const { hp, minHp, eventLog, survivalGrade } = get();
+    const today = getToday();
+    set({ isRetired: false });
+    setState({
+      hp, minHp, eventLog,
+      isRetired: false, survivalGrade, date: today,
+    });
   },
 
   resetDay() {
