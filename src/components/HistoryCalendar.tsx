@@ -25,7 +25,6 @@ function getCalendarDays(year: number, month: number) {
   const startPad = first.getDay();
   const daysInMonth = new Date(year, month, 0).getDate();
   const result: { date: string; day: number; isCurrentMonth: boolean }[] = [];
-
   const pm = month === 1 ? 12 : month - 1;
   const py = month === 1 ? year - 1 : year;
   const prevLast = new Date(py, pm, 0).getDate();
@@ -40,29 +39,23 @@ function getCalendarDays(year: number, month: number) {
   return result;
 }
 
-// 월별 분석 계산
 function getMonthStats(year: number, month: number, history: Record<string, any>, todayKey: string, todayData: any) {
   const prefix = fmtKey(year, month, 1).slice(0, 7);
   const records = Object.entries(history)
     .filter(([k]) => k.startsWith(prefix))
     .map(([, v]) => v);
   if (todayKey.startsWith(prefix) && todayData) records.unshift(todayData);
-
   if (records.length === 0) return null;
-
   const hpValues = records.map((r: any) => r.hp).filter(Boolean);
   const maxHp = Math.max(...hpValues);
   const minHp = Math.min(...hpValues);
   const avgHp = Math.round(hpValues.reduce((a, b) => a + b, 0) / hpValues.length);
-
   const weatherCounts: Record<string, number> = {};
   records.forEach((r: any) => {
     if (r.weatherState) weatherCounts[r.weatherState] = (weatherCounts[r.weatherState] ?? 0) + 1;
   });
   const dominantWeather = Object.entries(weatherCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'cloudy';
-
   const totalEvents = records.reduce((a: number, r: any) => a + (r.eventLog?.length ?? 0), 0);
-
   return { maxHp, minHp, avgHp, dominantWeather, totalEvents, recordCount: records.length };
 }
 
@@ -95,11 +88,15 @@ export function HistoryCalendar() {
   const goPrev = () => month === 1 ? (setYear(y => y - 1), setMonth(12)) : setMonth(m => m - 1);
   const goNext = () => month === 12 ? (setYear(y => y + 1), setMonth(1)) : setMonth(m => m + 1);
   const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
-  return (
-    <div className="flex gap-4 p-4" style={{ height: 'calc(100vh - var(--header-height) - var(--bottomnav-height) - 32px)', overflow: 'hidden', boxSizing: 'border-box' }}>
 
-      {/* 왼쪽 — 캘린더 + 분석 고정 */}
-      <div className="w-[320px] shrink-0 flex flex-col gap-3 overflow-hidden">
+  return (
+    // 모바일: 세로 스택 / 데스크탑: 좌우 분할
+    <div
+      className="flex flex-col md:flex-row gap-4 p-4 pb-24 md:pb-4"
+      style={{ minHeight: 'calc(100vh - var(--header-height) - var(--bottomnav-height))' }}
+    >
+      {/* 왼쪽 — 캘린더 + 분석 */}
+      <div className="w-full md:w-[320px] md:shrink-0 flex flex-col gap-3">
 
         {/* 월 네비게이션 */}
         <div className="flex items-center justify-between shrink-0">
@@ -158,7 +155,7 @@ export function HistoryCalendar() {
           </div>
         </div>
 
-        {/* 이달의 분석 — 캘린더 바로 아래 고정 */}
+        {/* 이달의 분석 */}
         <div className="glass-card shrink-0" style={{ padding: '14px 16px' }}>
           <p className="text-xs font-semibold mb-3" style={{ color: 'var(--color-text-muted)' }}>
             {month}월 분석
@@ -178,11 +175,11 @@ export function HistoryCalendar() {
               </div>
               <div className="flex flex-col gap-0.5">
                 <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>최고 HP</span>
-                <span className="text-base font-semibold" style={{ color: '#1A1A1A' }}>🏆 {stats.maxHp}</span>
+                <span className="text-base font-semibold" style={{ color: 'var(--color-text-primary)' }}>🏆 {stats.maxHp}</span>
               </div>
               <div className="flex flex-col gap-0.5">
                 <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>최저 HP</span>
-                <span className="text-base font-semibold" style={{ color: '#999' }}>💀 {stats.minHp}</span>
+                <span className="text-base font-semibold" style={{ color: 'var(--color-text-muted)' }}>💀 {stats.minHp}</span>
               </div>
               <div className="col-span-2 flex items-center justify-between pt-1"
                 style={{ borderTop: '1px solid var(--color-border)' }}>
@@ -196,7 +193,7 @@ export function HistoryCalendar() {
         </div>
       </div>
 
-      {/* 오른쪽 — 선택 날짜 기록 (데스크탑: 내부 스크롤, 모바일: 자연스럽게 아래) */}
+      {/* 오른쪽 — 선택 날짜 상세 */}
       <div className="flex-1 min-w-0">
         <AnimatePresence mode="wait">
           {!selectedDate ? (
@@ -224,7 +221,6 @@ export function HistoryCalendar() {
               className="glass-card flex flex-col gap-4"
               style={{ padding: '20px 24px' }}
             >
-              {/* 날짜 + 날씨 + HP 요약 */}
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-bold text-base" style={{ color: 'var(--color-text-primary)' }}>
@@ -243,7 +239,6 @@ export function HistoryCalendar() {
                 </div>
               </div>
 
-              {/* HP 바 */}
               <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(0,0,0,0.08)' }}>
                 <div className="h-full rounded-full transition-all duration-500"
                   style={{
@@ -252,7 +247,6 @@ export function HistoryCalendar() {
                   }} />
               </div>
 
-              {/* 이벤트 타임라인 */}
               <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 16 }}>
                 <p className="text-xs font-semibold mb-3" style={{ color: 'var(--color-text-muted)' }}>
                   이벤트 기록 ({selectedRecord.eventLog.length}건)
