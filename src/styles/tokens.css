@@ -3,152 +3,172 @@
    모노톤 컬러 시스템 + 날씨 테마
    ============================================= */
 
-:root {
-  /* ── 모노톤 컬러 시스템 ── */
-  --color-primary: #1A1A1A;
-  --color-secondary: #555555;
-  --color-muted: #999999;
-  --color-faint: #CCCCCC;
-
-  /* 서피스 (카드/패널) — 글라스모피즘 */
-  --color-surface: rgba(255, 255, 255, 0.78);
-  --color-surface-hover: rgba(255, 255, 255, 0.92);
-  --color-surface-strong: rgba(255, 255, 255, 0.95);
-  --color-border: rgba(0, 0, 0, 0.08);
-  --color-border-light: rgba(255, 255, 255, 0.5);
-
-  /* 이벤트 타입 — 모노톤 */
-  --color-positive-text: #1A1A1A;
-  --color-positive-bg: rgba(255, 255, 255, 0.65);
-  --color-negative-text: #555555;
-  --color-negative-bg: rgba(0, 0, 0, 0.05);
-
-  /* HP 게이지 */
-  --color-hp-bar-bg: rgba(0, 0, 0, 0.10);
-  --color-hp-bar-fill: rgba(0, 0, 0, 0.75);
-  --color-hp-text: #1A1A1A;
-
-  /* 타임라인 */
-  --color-timeline-line: rgba(0, 0, 0, 0.15);
-  --color-timeline-dot-positive: #1A1A1A;
-  --color-timeline-dot-negative: #999999;
-
-  /* 텍스트 */
-  --color-text-primary: #1A1A1A;
-  --color-text-secondary: #555555;
-  --color-text-muted: #999999;
-  --color-text-inverse: #FFFFFF;
-
-  /* 버튼 */
-  --color-btn-primary-bg: #1A1A1A;
-  --color-btn-primary-text: #FFFFFF;
-  --color-btn-secondary-bg: rgba(0, 0, 0, 0.06);
-  --color-btn-secondary-text: #1A1A1A;
-
-  /* ── 타이포그래피 ── */
-  --font-family-base: 'Pretendard', 'Apple SD Gothic Neo', -apple-system, sans-serif;
-  --font-size-display: 2.5rem;
-  --font-size-title: 1.5rem;
-  --font-size-subtitle: 1.125rem;
-  --font-size-body: 1rem;
-  --font-size-sm: 0.875rem;
-  --font-size-caption: 0.75rem;
-  --font-weight-bold: 700;
-  --font-weight-medium: 500;
-  --font-weight-regular: 400;
-  --line-height-tight: 1.2;
-  --line-height-normal: 1.6;
-
-  /* ── 간격 ── */
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 16px;
-  --spacing-lg: 24px;
-  --spacing-xl: 32px;
-  --spacing-2xl: 48px;
-
-  /* ── 반경 ── */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 20px;
-  --radius-xl: 28px;
-  --radius-full: 9999px;
-
-  /* ── 그림자 ── */
-  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.08);
-  --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.12);
-  --shadow-glass: 0 4px 24px rgba(0, 0, 0, 0.10);
-
-  /* ── 애니메이션 ── */
-  --transition-fast: 150ms ease;
-  --transition-base: 300ms ease;
-  --transition-slow: 600ms ease;
-  --transition-bg: 1.5s ease;
-
-  /* ── 레이아웃 ── */
-  --timeline-width: 300px;
-  --header-height: 56px;
-  --bottomnav-height: 56px;
-}
-
-/* ── 날씨별 배경 그라데이션 ── */
-.weather-sunny {
-  background: linear-gradient(135deg, #FFF9E6 0%, #FFE082 100%);
-}
-.weather-cloudy-sunny {
-  background: linear-gradient(135deg, #E3F2FD 0%, #B0C4D8 100%);
-}
-.weather-cloudy {
-  background: linear-gradient(135deg, #ECEFF1 0%, #B0BEC5 100%);
-}
-.weather-rainy {
-  background: linear-gradient(135deg, #E8EAF6 0%, #7986CB 100%);
-}
-.weather-stormy {
-  background: linear-gradient(135deg, #546E7A 0%, #263238 100%);
-  --color-text-primary: #FFFFFF;
-  --color-text-secondary: rgba(255,255,255,0.75);
-  --color-text-muted: rgba(255,255,255,0.5);
-  --color-surface: rgba(255, 255, 255, 0.12);
-  --color-surface-hover: rgba(255, 255, 255, 0.20);
-  --color-border: rgba(255, 255, 255, 0.15);
-  --color-hp-bar-bg: rgba(255, 255, 255, 0.15);
-  --color-hp-bar-fill: rgba(255, 255, 255, 0.85);
-  --color-hp-text: #FFFFFF;
-  --color-timeline-line: rgba(255,255,255,0.2);
-  --color-btn-primary-bg: #FFFFFF;
-  --color-btn-primary-text: #1A1A1A;
-}
-.weather-dead {
-  background: linear-gradient(135deg, #37474F 0%, #000000 100%);
-  --color-text-primary: #FFFFFF;
-  --color-text-secondary: rgba(255,255,255,0.65);
-  --color-text-muted: rgba(255,255,255,0.4);
-  --color-surface: rgba(255, 255, 255, 0.08);
-  --color-surface-hover: rgba(255, 255, 255, 0.15);
-  --color-border: rgba(255, 255, 255, 0.12);
-  --color-hp-bar-bg: rgba(255, 255, 255, 0.12);
-  --color-hp-bar-fill: rgba(255, 255, 255, 0.6);
-  --color-hp-text: #FFFFFF;
-  --color-btn-primary-bg: #FFFFFF;
-  --color-btn-primary-text: #000000;
-}
-
-/* ── 글라스 카드 공통 ── */
-.glass-card {
-  background: var(--color-surface);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-glass);
-}
-
-/* ── HP Pulse 애니메이션 (HP ≤ 20) ── */
-@keyframes hp-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-.hp-pulse {
-  animation: hp-pulse 1.2s ease-in-out infinite;
-}
+   :root {
+    /* ── 모노톤 컬러 시스템 ── */
+    --color-primary: #1A1A1A;
+    --color-secondary: #555555;
+    --color-muted: #999999;
+    --color-faint: #CCCCCC;
+  
+    /* 서피스 (카드/패널) — 글라스모피즘 */
+    --color-surface: rgba(255, 255, 255, 0.78);
+    --color-surface-hover: rgba(255, 255, 255, 0.92);
+    --color-surface-strong: rgba(255, 255, 255, 0.95);
+    --color-border: rgba(0, 0, 0, 0.08);
+    --color-border-light: rgba(255, 255, 255, 0.5);
+  
+    /* 이벤트 타입 — 모노톤 */
+    --color-positive-text: #1A1A1A;
+    --color-positive-bg: rgba(255, 255, 255, 0.65);
+    --color-negative-text: #555555;
+    --color-negative-bg: rgba(0, 0, 0, 0.05);
+  
+    /* 이벤트 타입 — 컬러 (레거시 호환) */
+    --color-positive: #43A047;
+    --color-negative: #E53935;
+  
+    /* HP 게이지 */
+    --color-hp-bar-bg: rgba(0, 0, 0, 0.10);
+    --color-hp-bar-fill: rgba(0, 0, 0, 0.75);
+    --color-hp-text: #1A1A1A;
+  
+    /* HP 상태별 컬러 */
+    --color-hp-high: #4CAF50;
+    --color-hp-mid: #FF9800;
+    --color-hp-low: #F44336;
+  
+    /* 타임라인 */
+    --color-timeline-line: rgba(0, 0, 0, 0.15);
+    --color-timeline-dot-positive: #1A1A1A;
+    --color-timeline-dot-negative: #999999;
+  
+    /* 텍스트 */
+    --color-text-primary: #1A1A1A;
+    --color-text-secondary: #555555;
+    --color-text-muted: #999999;
+    --color-text-disabled: #CCCCCC;
+    --color-text-inverse: #FFFFFF;
+  
+    /* 버튼 */
+    --color-btn-primary-bg: #1A1A1A;
+    --color-btn-primary-text: #FFFFFF;
+    --color-btn-secondary-bg: rgba(0, 0, 0, 0.06);
+    --color-btn-secondary-text: #1A1A1A;
+  
+    /* ── 타이포그래피 ── */
+    --font-family-base: 'Pretendard', 'Apple SD Gothic Neo', -apple-system, sans-serif;
+    --font-size-display: 2.5rem;
+    --font-size-title: 1.5rem;
+    --font-size-subtitle: 1.125rem;
+    --font-size-body: 1rem;
+    --font-size-sm: 0.875rem;
+    --font-size-caption: 0.75rem;
+    --font-weight-bold: 700;
+    --font-weight-medium: 500;
+    --font-weight-regular: 400;
+    --line-height-tight: 1.2;
+    --line-height-normal: 1.6;
+  
+    /* ── 간격 ── */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+    --spacing-2xl: 48px;
+  
+    /* ── 반경 ── */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 20px;
+    --radius-xl: 28px;
+    --radius-full: 9999px;
+  
+    /* ── 그림자 ── */
+    --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.08);
+    --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.12);
+    --shadow-glass: 0 4px 24px rgba(0, 0, 0, 0.10);
+  
+    /* ── 애니메이션 ── */
+    --transition-fast: 150ms ease;
+    --transition-base: 300ms ease;
+    --transition-slow: 600ms ease;
+    --transition-bg: 1.5s ease;
+  
+    /* ── 레이아웃 ── */
+    --timeline-width: 300px;
+    --header-height: 56px;
+    --bottomnav-height: 56px;
+  }
+  
+  /* ── 날씨별 배경 그라데이션 ── */
+  .weather-sunny {
+    background: linear-gradient(135deg, #FFF9E6 0%, #FFE082 100%);
+  }
+  .weather-cloudy-sunny {
+    background: linear-gradient(135deg, #E3F2FD 0%, #B0C4D8 100%);
+  }
+  .weather-cloudy {
+    background: linear-gradient(135deg, #ECEFF1 0%, #B0BEC5 100%);
+  }
+  .weather-rainy {
+    background: linear-gradient(135deg, #E8EAF6 0%, #7986CB 100%);
+  }
+  .weather-stormy {
+    background: linear-gradient(135deg, #546E7A 0%, #263238 100%);
+    --color-text-primary: #FFFFFF;
+    --color-text-secondary: rgba(255,255,255,0.75);
+    --color-text-muted: rgba(255,255,255,0.5);
+    --color-surface: rgba(255, 255, 255, 0.12);
+    --color-surface-hover: rgba(255, 255, 255, 0.20);
+    --color-border: rgba(255, 255, 255, 0.15);
+    --color-border-light: rgba(255, 255, 255, 0.2);
+    --color-hp-bar-bg: rgba(255, 255, 255, 0.15);
+    --color-hp-bar-fill: rgba(255, 255, 255, 0.85);
+    --color-hp-text: #FFFFFF;
+    --color-timeline-line: rgba(255,255,255,0.45);
+    --color-btn-primary-bg: #FFFFFF;
+    --color-btn-primary-text: #1A1A1A;
+    --color-positive-bg: rgba(255, 255, 255, 0.15);
+    --color-positive-text: #FFFFFF;
+    --color-negative-bg: rgba(0, 0, 0, 0.25);
+    --color-negative-text: rgba(255, 255, 255, 0.75);
+  }
+  .weather-dead {
+    background: linear-gradient(135deg, #37474F 0%, #000000 100%);
+    --color-text-primary: #FFFFFF;
+    --color-text-secondary: rgba(255,255,255,0.65);
+    --color-text-muted: rgba(255,255,255,0.4);
+    --color-surface: rgba(255, 255, 255, 0.08);
+    --color-surface-hover: rgba(255, 255, 255, 0.15);
+    --color-border: rgba(255, 255, 255, 0.12);
+    --color-border-light: rgba(255, 255, 255, 0.15);
+    --color-hp-bar-bg: rgba(255, 255, 255, 0.12);
+    --color-hp-bar-fill: rgba(255, 255, 255, 0.6);
+    --color-hp-text: #FFFFFF;
+    --color-btn-primary-bg: #FFFFFF;
+    --color-btn-primary-text: #000000;
+    --color-positive-bg: rgba(255, 255, 255, 0.12);
+    --color-positive-text: rgba(255, 255, 255, 0.9);
+    --color-negative-bg: rgba(0, 0, 0, 0.3);
+    --color-negative-text: rgba(255, 255, 255, 0.6);
+  }
+  
+  /* ── 글라스 카드 공통 ── */
+  .glass-card {
+    background: var(--color-surface);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-glass);
+  }
+  
+  /* ── HP Pulse 애니메이션 (HP ≤ 20) ── */
+  @keyframes hp-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  .hp-pulse {
+    animation: hp-pulse 1.2s ease-in-out infinite;
+  }
