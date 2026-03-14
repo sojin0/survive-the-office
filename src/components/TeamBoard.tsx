@@ -7,9 +7,9 @@ import { useAppStore } from '../store/useAppStore';
 import { useAuthStore } from '../store/useAuthStore';
 
 const REACTION_EMOJIS = [
-  { emoji: '👏', tooltip: '응원의 박수!!!', bg: 'rgba(255, 214, 0, 0.15)', hoverBg: 'rgba(255, 214, 0, 0.30)' },
-  { emoji: '☕', tooltip: '커피 한 잔 어때요?', bg: 'rgba(161, 102, 47, 0.12)', hoverBg: 'rgba(161, 102, 47, 0.22)' },
-  { emoji: '🍩', tooltip: '간식 먹어요!', bg: 'rgba(255, 100, 130, 0.12)', hoverBg: 'rgba(255, 100, 130, 0.22)' },
+  { emoji: '👏', tooltip: '응원의 박수!!!', bg: 'rgba(255, 214, 0, 0.15)' },
+  { emoji: '☕', tooltip: '커피 한 잔 어때요?', bg: 'rgba(161, 102, 47, 0.12)' },
+  { emoji: '🍩', tooltip: '간식 먹어요!', bg: 'rgba(255, 100, 130, 0.12)' },
 ] as const;
 
 function getTeamAverageWeather(members: { weatherState: WeatherState }[]): WeatherState {
@@ -44,7 +44,21 @@ export function TeamBoard() {
     setReactionsState(next);
   }, []);
 
-  const teamWeather = useMemo(() => getTeamAverageWeather(MOCK_TEAM_MEMBERS), []);
+  // ✅ myWeather 반영해서 팀 평균 날씨 실시간 계산
+  const mergedMembers: TeamMember[] = useMemo(() =>
+    MOCK_TEAM_MEMBERS.map((member) => {
+      const isMe = member.name === userName;
+      return {
+        ...member,
+        oneLiner: isMe ? myOneLiner : member.oneLiner,
+        hp: isMe ? myHp : member.hp,
+        weatherState: isMe ? myWeather : member.weatherState,
+      };
+    }),
+    [userName, myOneLiner, myHp, myWeather]
+  );
+
+  const teamWeather = useMemo(() => getTeamAverageWeather(mergedMembers), [mergedMembers]);
 
   const handleInviteClick = useCallback(() => {
     setShowToast(true);
@@ -98,23 +112,14 @@ export function TeamBoard() {
 
       {/* 팀원 카드 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-        {MOCK_TEAM_MEMBERS.map((member) => {
-          const isMe = member.name === userName;
-          const mergedMember: TeamMember = {
-            ...member,
-            oneLiner: isMe ? myOneLiner : member.oneLiner,
-            hp: isMe ? myHp : member.hp,
-            weatherState: isMe ? myWeather : member.weatherState,
-          };
-          return (
-            <TeamMemberCard
-              key={member.id}
-              member={mergedMember}
-              reactionCounts={reactions[member.id] ?? {}}
-              onReaction={(emoji) => setReaction(member.id, emoji)}
-            />
-          );
-        })}
+        {mergedMembers.map((member) => (
+          <TeamMemberCard
+            key={member.id}
+            member={member}
+            reactionCounts={reactions[member.id] ?? {}}
+            onReaction={(emoji) => setReaction(member.id, emoji)}
+          />
+        ))}
       </div>
     </div>
   );
@@ -160,10 +165,11 @@ function TeamMemberCard({ member, reactionCounts, onReaction }: TeamMemberCardPr
       <div className="flex items-center gap-3">
         <span className="text-xs shrink-0" style={{ color: 'var(--color-text-muted)' }}>HP</span>
         <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(0,0,0,0.08)' }}>
-          <div
-            className="h-full rounded-full transition-all duration-500"
+          <motion.div
+            className="h-full rounded-full"
+            animate={{ width: `${member.hp}%` }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
             style={{
-              width: `${member.hp}%`,
               background: member.hp >= 60 ? '#1A1A1A' : member.hp >= 30 ? '#888888' : '#BBBBBB',
             }}
           />
@@ -173,7 +179,7 @@ function TeamMemberCard({ member, reactionCounts, onReaction }: TeamMemberCardPr
         </span>
       </div>
 
-      {/* 한줄 상태 — 읽기 전용 */}
+      {/* 한줄 상태 */}
       <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
         "{member.oneLiner}"
       </p>
