@@ -1,11 +1,10 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { POSITIVE_EVENTS, NEGATIVE_EVENTS } from '../data/events';
 import { EventButton } from './EventButton';
 import type { EventItem } from '../types';
 
 type Tab = 'positive' | 'negative';
 
-// 커스텀 이벤트 추가 폼
 function AddEventForm({
   tab,
   onAdd,
@@ -39,7 +38,6 @@ function AddEventForm({
       style={{ background: 'rgba(0,0,0,0.04)', border: '1px dashed rgba(0,0,0,0.15)' }}
     >
       <div className="flex gap-2">
-        {/* 이모지 */}
         <input
           type="text"
           value={emoji}
@@ -53,7 +51,6 @@ function AddEventForm({
             color: 'var(--color-text-primary)',
           }}
         />
-        {/* 이벤트명 */}
         <input
           type="text"
           value={name}
@@ -68,7 +65,6 @@ function AddEventForm({
           onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
           autoFocus
         />
-        {/* HP 변동값 */}
         <input
           type="number"
           value={Math.abs(delta)}
@@ -117,10 +113,20 @@ export function EventPanel() {
   const [tab, setTab] = useState<Tab>('positive');
   const [showAddForm, setShowAddForm] = useState(false);
   const [customEvents, setCustomEvents] = useState<EventItem[]>([]);
+  const formRef = useRef<HTMLDivElement>(null);
 
   const baseEvents = tab === 'positive' ? POSITIVE_EVENTS : NEGATIVE_EVENTS;
   const custom = customEvents.filter((e) => e.eventType === tab);
   const events = [...baseEvents, ...custom];
+
+  // 폼이 열릴 때 스크롤해서 보이게
+  useEffect(() => {
+    if (showAddForm && formRef.current) {
+      setTimeout(() => {
+        formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 50);
+    }
+  }, [showAddForm]);
 
   const handleAdd = (e: EventItem) => {
     setCustomEvents((prev) => [...prev, e]);
@@ -129,7 +135,6 @@ export function EventPanel() {
 
   return (
     <section className="glass-card p-[var(--spacing-lg)]">
-
       {/* 탭 */}
       <div
         className="flex gap-1 p-1 mb-4 rounded-[var(--radius-md)]"
@@ -163,8 +168,6 @@ export function EventPanel() {
         {events.map((event) => (
           <EventButton key={event.id} event={event} />
         ))}
-
-        {/* + 버튼 */}
         {!showAddForm && (
           <button
             type="button"
@@ -185,13 +188,14 @@ export function EventPanel() {
 
       {/* 추가 폼 */}
       {showAddForm && (
-        <AddEventForm
-          tab={tab}
-          onAdd={handleAdd}
-          onCancel={() => setShowAddForm(false)}
-        />
+        <div ref={formRef}>
+          <AddEventForm
+            tab={tab}
+            onAdd={handleAdd}
+            onCancel={() => setShowAddForm(false)}
+          />
+        </div>
       )}
-
     </section>
   );
 }
