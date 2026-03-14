@@ -4,13 +4,21 @@ import { Dashboard } from './Dashboard';
 import { TeamBoard } from './TeamBoard';
 import { HistoryCalendar } from './HistoryCalendar';
 import type { TabId } from '../types';
+import { useAppStore } from '../store/useAppStore';
 
 export function MainLayout() {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
+  const weatherState = useAppStore((s) => s.weatherState);
 
   return (
     <>
-      <div style={{ minHeight: 'calc(100vh - var(--header-height) - var(--bottomnav-height))' }}>
+      <div
+        className={`weather-${weatherState} pb-[124px] md:pb-0`}
+        style={{
+          minHeight: 'calc(100vh - var(--header-height) - var(--bottomnav-height))',
+          transition: 'background var(--transition-bg)',
+        }}
+      >
         {activeTab === 'dashboard' && <Dashboard />}
         {activeTab === 'team' && <TeamBoard />}
         {activeTab === 'history' && <HistoryCalendar />}

@@ -11,20 +11,10 @@ const WEATHER_EMOJI: Record<string, string> = {
   dead: '💀',
 };
 
-const BG_GRADIENT: Record<string, string> = {
-  sunny: 'from-[var(--color-sunny-bg)] to-amber-50',
-  cloudy_sunny: 'from-[var(--color-cloudy-bg)] to-slate-100',
-  cloudy: 'from-[var(--color-cloudy-bg)] to-gray-200',
-  rainy: 'from-[var(--color-rain-bg)] to-indigo-100',
-  stormy: 'from-[var(--color-storm-bg)] to-slate-800',
-  dead: 'from-slate-900 to-slate-800',
-};
-
 export function WeatherCard() {
   const weatherState = useAppStore((s) => s.weatherState);
   const meta = getWeatherMeta(weatherState);
   const emoji = WEATHER_EMOJI[weatherState] ?? '☁️';
-  const bgClass = BG_GRADIENT[weatherState] ?? 'from-gray-100 to-gray-200';
 
   return (
     <motion.section
@@ -32,7 +22,11 @@ export function WeatherCard() {
       initial={{ opacity: 0.8 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
-      className={`rounded-[var(--radius-lg)] p-[var(--spacing-lg)] bg-gradient-to-br ${bgClass} shadow-card h-full`}
+      className={`weather-${weatherState} rounded-[var(--radius-lg)] p-[var(--spacing-lg)] shadow-card h-full ${
+        weatherState === 'stormy' || weatherState === 'dead'
+          ? 'outline outline-1 outline-white/20'
+          : ''
+      }`}
       data-testid="weather-card"
     >
       <div className="flex items-center gap-3 h-full">
