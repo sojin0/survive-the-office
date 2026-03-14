@@ -12,6 +12,7 @@ type AppStore = {
   weatherState: WeatherState;
   eventLog: EventLog[];
   isRetired: boolean;
+  isViewingDashboard: boolean; // 퇴근 후 대시보드 열람 모드
   survivalGrade: SurvivalGrade | null;
   minHp: number;
   oneLiner: string;
@@ -32,6 +33,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   weatherState: 'sunny',
   eventLog: [],
   isRetired: false,
+  isViewingDashboard: false,
   survivalGrade: null,
   minHp: INITIAL_HP,
   oneLiner: INITIAL_ONE_LINER,
@@ -92,7 +94,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const { hp, minHp, eventLog, weatherState } = get();
     const grade = getSurvivalGrade(hp);
     const today = getToday();
-    set({ isRetired: true, survivalGrade: grade });
+    set({ isRetired: true, isViewingDashboard: false, survivalGrade: grade });
     setState({
       ...getState(), hp, minHp, eventLog,
       isRetired: true, survivalGrade: grade, date: today,
@@ -100,23 +102,17 @@ export const useAppStore = create<AppStore>((set, get) => ({
     saveDayToHistory({ date: today, hp, minHp, eventLog, weatherState, survivalGrade: grade });
   },
 
-  // HP/기록 유지, isRetired만 false로 — 대시보드 열람용
+  // isRetired 유지 + 대시보드 열람 모드 진입 (버튼 비활성화 유지)
   viewDashboard() {
-    const { hp, minHp, eventLog, survivalGrade } = get();
-    const today = getToday();
-    set({ isRetired: false });
-    setState({
-      hp, minHp, eventLog,
-      isRetired: false, survivalGrade, date: today,
-    });
+    set({ isViewingDashboard: true });
   },
 
   resetDay() {
     const today = getToday();
     set({
       hp: INITIAL_HP, weatherState: 'sunny',
-      eventLog: [], isRetired: false, survivalGrade: null,
-      minHp: INITIAL_HP, oneLiner: INITIAL_ONE_LINER,
+      eventLog: [], isRetired: false, isViewingDashboard: false,
+      survivalGrade: null, minHp: INITIAL_HP, oneLiner: INITIAL_ONE_LINER,
     });
     setState({
       hp: INITIAL_HP, eventLog: [], minHp: INITIAL_HP,
@@ -140,6 +136,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       minHp: saved.minHp,
       eventLog: saved.eventLog,
       isRetired: saved.isRetired ?? false,
+      isViewingDashboard: false,
       survivalGrade: saved.survivalGrade as SurvivalGrade | null,
       weatherState: getWeatherState(saved.hp),
     };
