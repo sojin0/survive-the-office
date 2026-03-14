@@ -95,18 +95,11 @@ export function HistoryCalendar() {
   const goPrev = () => month === 1 ? (setYear(y => y - 1), setMonth(12)) : setMonth(m => m - 1);
   const goNext = () => month === 12 ? (setYear(y => y + 1), setMonth(1)) : setMonth(m => m + 1);
   const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
-  const PANEL_HEIGHT = 'calc(100vh - var(--header-height) - var(--bottomnav-height) - 32px)';
-
   return (
-    <div
-      className="flex flex-col md:flex-row gap-4 p-4"
-      style={{ paddingBottom: 80, overflowY: 'auto' }}
-    >
-      {/* 왼쪽 — 캘린더 + 분석 */}
-      <div
-        className="w-full md:w-[320px] md:shrink-0 flex flex-col gap-3"
-        style={{ position: 'sticky', top: 0, alignSelf: 'flex-start' }}
-      >
+    <div className="flex gap-4 p-4" style={{ height: 'calc(100vh - var(--header-height) - var(--bottomnav-height) - 32px)', overflow: 'hidden', boxSizing: 'border-box' }}>
+
+      {/* 왼쪽 — 캘린더 + 분석 고정 */}
+      <div className="w-[320px] shrink-0 flex flex-col gap-3 overflow-hidden">
 
         {/* 월 네비게이션 */}
         <div className="flex items-center justify-between shrink-0">
@@ -203,7 +196,7 @@ export function HistoryCalendar() {
         </div>
       </div>
 
-      {/* 오른쪽 — 선택 날짜 기록 */}
+      {/* 오른쪽 — 선택 날짜 기록 (데스크탑: 내부 스크롤, 모바일: 자연스럽게 아래) */}
       <div className="flex-1 min-w-0">
         <AnimatePresence mode="wait">
           {!selectedDate ? (
