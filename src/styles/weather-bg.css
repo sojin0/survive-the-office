@@ -1,0 +1,50 @@
+/* 날씨별 전체 배경 그라데이션 - 1s 전환 */
+.weather-bg-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  transition: opacity 1s ease;
+  pointer-events: none;
+}
+
+.weather-bg-layer.sunny {
+  background: linear-gradient(135deg, #FFF9E6 0%, #FFF0B2 100%);
+}
+
+.weather-bg-layer.cloudy_sunny {
+  background: linear-gradient(135deg, #F0F4F8 0%, #E0EAF4 100%);
+}
+
+.weather-bg-layer.cloudy {
+  background: linear-gradient(135deg, #ECEFF1 0%, #CFD8DC 100%);
+}
+
+.weather-bg-layer.rainy {
+  background: linear-gradient(135deg, #E8EAF6 0%, #C5CAE9 100%);
+}
+
+.weather-bg-layer.stormy {
+  background: linear-gradient(135deg, #37474F 0%, #263238 100%);
+}
+
+.weather-bg-layer.dead {
+  background: linear-gradient(135deg, #212121 0%, #000000 100%);
+}
+
+.weather-text-dark {
+  color: #ffffff;
+}
+
+.weather-text-dark [data-text-secondary] {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.weather-text-dark [data-text-disabled] {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* 카드/패널 내부는 기존 텍스트 색 유지 */
+.weather-text-dark [class*="shadow-card"],
+.weather-text-dark [class*="bg-white"] {
+  color: var(--color-text-primary);
+}

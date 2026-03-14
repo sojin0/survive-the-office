@@ -1,0 +1,142 @@
+import { create } from 'zustand';
+import type { EventLog, WeatherState, SurvivalGrade } from '../types';
+import { getWeatherState, getSurvivalGrade, clampHp } from '../utils/hp';
+import { getState, setState, saveDayToHistory } from '../utils/storage';
+
+function getToday(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+type AppStore = {
+  hp: number;
+  weatherState: WeatherState;
+  eventLog: EventLog[];
+  isRetired: boolean;
+  survivalGrade: SurvivalGrade | null;
+  minHp: number;
+  oneLiner: string;
+  addEvent: (log: Omit<EventLog, 'id'>) => void;
+  removeEvent: (id: string) => void;
+  setOneLiner: (text: string) => void;
+  retire: () => void;
+  resetDay: () => void;
+  hydrate: () => void;
+};
+
+const INITIAL_HP = 100;
+const INITIAL_ONE_LINER = '오늘도 살아남는 중... 🫡';
+
+export const useAppStore = create<AppStore>((set, get) => ({
+  hp: INITIAL_HP,
+  weatherState: 'sunny',
+  eventLog: [],
+  isRetired: false,
+  survivalGrade: null,
+  minHp: INITIAL_HP,
+  oneLiner: INITIAL_ONE_LINER,
+
+  addEvent(log) {
+    const { hp, eventLog, minHp } = get();
+    const newHp = clampHp(hp + log.hpDelta);
+    const newMin = Math.min(minHp, newHp);
+    const newLog: EventLog = { ...log, id: crypto.randomUUID() };
+    const nextLog = [newLog, ...eventLog];
+    const weatherState = getWeatherState(newHp);
+    // 이벤트 기록 시 한줄 상태 자동 업데이트
+    const autoOneLiner = log.hpDelta >= 0
+      ? `${log.emoji} ${log.name} 완료!`
+      : `${log.emoji} ${log.name}... 힘들다`;
+    set({ hp: newHp, minHp: newMin, eventLog: nextLog, weatherState, oneLiner: autoOneLiner });
+    const today = getToday();
+    setState({
+      hp: newHp, minHp: newMin, eventLog: nextLog,
+      isRetired: get().isRetired, survivalGrade: get().survivalGrade, date: today,
+    });
+    saveDayToHistory({
+      date: today, hp: newHp, minHp: newMin,
+      eventLog: nextLog, weatherState, survivalGrade: get().survivalGrade ?? '',
+    });
+  },
+
+  removeEvent(id) {
+    const { eventLog } = get();
+    const target = eventLog.find((l) => l.id === id);
+    if (!target) return;
+    const nextLog = eventLog.filter((l) => l.id !== id);
+    const newHp = clampHp(
+      nextLog.reduceRight((acc, l) => acc + l.hpDelta, INITIAL_HP)
+    );
+    const newMin = nextLog.length === 0
+      ? INITIAL_HP
+      : Math.min(...nextLog.map((_, i) =>
+          clampHp(nextLog.slice(i).reduceRight((acc, l) => acc + l.hpDelta, INITIAL_HP))
+        ));
+    const weatherState = getWeatherState(newHp);
+    const today = getToday();
+    set({ hp: newHp, minHp: newMin, eventLog: nextLog, weatherState });
+    setState({
+      hp: newHp, minHp: newMin, eventLog: nextLog,
+      isRetired: get().isRetired, survivalGrade: get().survivalGrade, date: today,
+    });
+    saveDayToHistory({
+      date: today, hp: newHp, minHp: newMin,
+      eventLog: nextLog, weatherState, survivalGrade: get().survivalGrade ?? '',
+    });
+  },
+
+  setOneLiner(text) {
+    set({ oneLiner: text });
+  },
+
+  retire() {
+    const { hp, minHp, eventLog, weatherState } = get();
+    const grade = getSurvivalGrade(hp);
+    const today = getToday();
+    set({ isRetired: true, survivalGrade: grade });
+    setState({
+      ...getState(), hp, minHp, eventLog,
+      isRetired: true, survivalGrade: grade, date: today,
+    });
+    saveDayToHistory({ date: today, hp, minHp, eventLog, weatherState, survivalGrade: grade });
+  },
+
+  resetDay() {
+    const today = getToday();
+    set({
+      hp: INITIAL_HP, weatherState: 'sunny',
+      eventLog: [], isRetired: false, survivalGrade: null,
+      minHp: INITIAL_HP, oneLiner: INITIAL_ONE_LINER,
+    });
+    setState({
+      hp: INITIAL_HP, eventLog: [], minHp: INITIAL_HP,
+      isRetired: false, survivalGrade: null, date: today,
+    });
+    saveDayToHistory({
+      date: today, hp: INITIAL_HP, minHp: INITIAL_HP,
+      eventLog: [], weatherState: 'sunny', survivalGrade: '',
+    });
+  },
+
+  hydrate() {
+    const saved = getState();
+    const today = getToday();
+    if (!saved || saved.date !== today) {
+      get().resetDay();
+      return;
+    }
+    const state = {
+      hp: saved.hp,
+      minHp: saved.minHp,
+      eventLog: saved.eventLog,
+      isRetired: saved.isRetired ?? false,
+      survivalGrade: saved.survivalGrade as SurvivalGrade | null,
+      weatherState: getWeatherState(saved.hp),
+    };
+    set(state);
+    saveDayToHistory({
+      date: today, hp: state.hp, minHp: state.minHp,
+      eventLog: state.eventLog, weatherState: state.weatherState,
+      survivalGrade: state.survivalGrade ?? '',
+    });
+  },
+}));
