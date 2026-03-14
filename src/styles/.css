@@ -1,0 +1,132 @@
+/* =============================================
+   디자인 토큰 — 오늘 회사에서 살아남기
+   ============================================= */
+
+   :root {
+    /* ── 레이아웃 ── */
+    --header-height: 56px;
+    --bottomnav-height: 56px;
+  
+    /* ── 반경 ── */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 20px;
+    --radius-xl: 28px;
+    --radius-full: 9999px;
+  
+    /* ── 간격 ── */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+    --spacing-2xl: 48px;
+  
+    /* ── 타이포그래피 ── */
+    --font-family-base: 'Pretendard', 'Apple SD Gothic Neo', -apple-system, sans-serif;
+    --font-size-display: 2.5rem;
+    --font-size-title: 1.5rem;
+    --font-size-subtitle: 1.125rem;
+    --font-size-body: 1rem;
+    --font-size-sm: 0.875rem;
+    --font-size-caption: 0.75rem;
+    --font-weight-bold: 700;
+    --font-weight-medium: 500;
+    --font-weight-regular: 400;
+    --line-height-tight: 1.2;
+    --line-height-normal: 1.6;
+  
+    /* ── 그림자 ── */
+    --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.08);
+    --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.12);
+    --shadow-glass: 0 4px 24px rgba(0, 0, 0, 0.10);
+  
+    /* ── 서피스 ── */
+    --color-surface: rgba(255, 255, 255, 0.78);
+    --color-surface-hover: rgba(255, 255, 255, 0.92);
+    --color-surface-strong: rgba(255, 255, 255, 0.95);
+  
+    /* ── 보더 ── */
+    --color-border: rgba(0, 0, 0, 0.08);
+    --color-border-light: rgba(255, 255, 255, 0.5);
+  
+    /* ── 텍스트 ── */
+    --color-text-primary: #1A1A1A;
+    --color-text-secondary: #555555;
+    --color-text-muted: #999999;
+    --color-text-disabled: #CCCCCC;
+    --color-text-inverse: #FFFFFF;
+  
+    /* ── 프라이머리 ── */
+    --color-primary: #1A1A1A;
+    --color-secondary: #555555;
+    --color-muted: #999999;
+    --color-faint: #CCCCCC;
+  
+    /* ── 버튼 ── */
+    --color-btn-primary-bg: #1A1A1A;
+    --color-btn-primary-text: #FFFFFF;
+    --color-btn-secondary-bg: rgba(0, 0, 0, 0.06);
+    --color-btn-secondary-text: #1A1A1A;
+  
+    /* ── HP 게이지 ── */
+    --color-hp-text: #1A1A1A;
+    --color-hp-bar-bg: rgba(0, 0, 0, 0.10);
+    --color-hp-bar-fill: rgba(0, 0, 0, 0.75);
+    --color-hp-high: #4CAF50;
+    --color-hp-mid: #FF9800;
+    --color-hp-low: #F44336;
+  
+    /* ── 이벤트 타입 ── */
+    --color-positive: #1A1A1A;
+    --color-positive-text: #1A1A1A;
+    --color-positive-bg: rgba(255, 255, 255, 0.65);
+    --color-negative: #BBBBBB;
+    --color-negative-text: #999999;
+    --color-negative-bg: rgba(0, 0, 0, 0.05);
+  
+    /* ── 타임라인 ── */
+    --color-timeline-line: rgba(0, 0, 0, 0.15);
+    --color-timeline-dot-positive: #1A1A1A;
+    --color-timeline-dot-negative: #BBBBBB;
+  
+    /* ── 날씨 배경 ── */
+    --color-sunny-bg: #FFF9E6;
+    --color-cloudy-bg: #ECEFF1;
+    --color-rain-bg: #E8EAF6;
+    --color-rain-primary: #5C6BC0;
+    --color-storm-bg: #37474F;
+  
+    /* ── 애니메이션 ── */
+    --transition-fast: 150ms ease;
+    --transition-base: 300ms ease;
+    --transition-slow: 600ms ease;
+    --transition-bg: 1.5s ease;
+  }
+  
+  /* ── 글라스 카드 공통 ── */
+  .glass-card {
+    background: var(--color-surface);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-glass);
+  }
+  
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+  
+  .shadow-elevated {
+    box-shadow: var(--shadow-elevated);
+  }
+  
+  /* ── HP Pulse 애니메이션 (HP ≤ 20) ── */
+  @keyframes hp-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  .hp-pulse {
+    animation: hp-pulse 1.2s ease-in-out infinite;
+  }
