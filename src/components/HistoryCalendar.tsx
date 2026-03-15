@@ -89,13 +89,75 @@ export function HistoryCalendar() {
   const goNext = () => month === 12 ? (setYear(y => y + 1), setMonth(1)) : setMonth(m => m + 1);
   const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
 
+  // 날짜 상세 패널
+  const DetailPanel = () => (
+    <AnimatePresence mode="wait">
+      {!selectedDate ? null : !selectedRecord ? (
+        <motion.div key="no-record"
+          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+          className="glass-card flex flex-col items-center justify-center"
+          style={{ minHeight: 160, padding: 32 }}
+        >
+          <p className="text-3xl mb-3">🌱</p>
+          <p className="text-sm font-medium text-text-primary">{selectedDate}</p>
+          <p className="text-sm mt-1 text-text-muted">이 날은 기록이 없어요</p>
+        </motion.div>
+      ) : (
+        <motion.div key={selectedDate}
+          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+          className="glass-card flex flex-col gap-4"
+          style={{ padding: '20px 24px' }}
+        >
+          <div>
+            <p className="font-bold text-base text-text-primary">{selectedDate}</p>
+            <p className="text-sm mt-0.5 text-text-secondary">
+              {getWeatherEmoji(selectedRecord.weatherState)}&nbsp;
+              HP 최종 <strong>{selectedRecord.hp}</strong> · 최저 <strong>{selectedRecord.minHp}</strong>
+              {selectedRecord.survivalGrade && (
+                <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-bold text-text-primary"
+                  style={{ background: 'rgba(0,0,0,0.07)' }}>
+                  {selectedRecord.survivalGrade}등급
+                </span>
+              )}
+            </p>
+          </div>
+          <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(0,0,0,0.08)' }}>
+            <div className="h-full rounded-full transition-all duration-500"
+              style={{ width: `${selectedRecord.hp}%`, background: selectedRecord.hp >= 60 ? '#1A1A1A' : selectedRecord.hp >= 30 ? '#888' : '#BBB' }} />
+          </div>
+          <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 16 }}>
+            <p className="text-xs font-semibold mb-3 text-text-muted">
+              이벤트 기록 ({selectedRecord.eventLog.length}건)
+            </p>
+            {selectedRecord.eventLog.length === 0 ? (
+              <p className="text-sm text-text-muted">기록된 이벤트가 없어요</p>
+            ) : (
+              <ul className="flex flex-col gap-2">
+                {selectedRecord.eventLog.map((log: any) => (
+                  <li key={log.id} className="flex items-center gap-2 text-sm">
+                    <span className="tabular-nums shrink-0 text-text-muted" style={{ fontSize: 10, width: 36 }}>{log.timestamp}</span>
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: log.hpDelta >= 0 ? '#1A1A1A' : '#BBBBBB' }} aria-hidden />
+                    <span aria-hidden>{log.emoji}</span>
+                    <span className="flex-1 truncate text-text-primary">{log.name}</span>
+                    <span className="font-semibold tabular-nums shrink-0" style={{ color: log.hpDelta >= 0 ? '#1A1A1A' : '#999999' }}>
+                      {log.hpDelta >= 0 ? '+' : ''}{log.hpDelta}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+
   return (
-    // 모바일: 세로 스택 / 데스크탑: 좌우 분할
     <div
       className="flex flex-col md:flex-row gap-4 p-4 pb-24 md:pb-4"
       style={{ minHeight: 'calc(100vh - var(--header-height) - var(--bottomnav-height))' }}
     >
-      {/* 왼쪽 — 캘린더 + 분석 */}
+      {/* 왼쪽 — 캘린더 + (모바일: 선택 시 상세 바로 표시) + 분석 */}
       <div className="w-full md:w-[320px] md:shrink-0 flex flex-col gap-3">
 
         {/* 월 네비게이션 */}
@@ -104,9 +166,7 @@ export function HistoryCalendar() {
             className="w-8 h-8 flex items-center justify-center rounded-full text-sm transition-all focus:outline-none"
             style={{ background: 'rgba(0,0,0,0.06)' }} aria-label="이전 달">←
           </button>
-          <span className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>
-            {year}년 {month}월
-          </span>
+          <span className="font-semibold text-sm text-text-primary">{year}년 {month}월</span>
           <button type="button" onClick={goNext}
             className="w-8 h-8 flex items-center justify-center rounded-full text-sm transition-all focus:outline-none"
             style={{ background: 'rgba(0,0,0,0.06)' }} aria-label="다음 달">→
@@ -132,20 +192,11 @@ export function HistoryCalendar() {
                 <button key={date} type="button"
                   onClick={() => setSelectedDate(isSelected ? null : date)}
                   className="flex flex-col items-center justify-center py-1 gap-0.5 transition-all focus:outline-none"
-                  style={{
-                    minHeight: 40,
-                    background: isSelected ? 'rgba(0,0,0,0.08)' : 'transparent',
-                    opacity: isCurrentMonth ? 1 : 0.3,
-                    borderRadius: 6,
-                  }}
+                  style={{ minHeight: 40, background: isSelected ? 'rgba(0,0,0,0.08)' : 'transparent', opacity: isCurrentMonth ? 1 : 0.3, borderRadius: 6 }}
                   aria-pressed={isSelected}
                 >
                   <span className="text-xs w-5 h-5 flex items-center justify-center rounded-full"
-                    style={{
-                      background: isToday ? 'var(--color-primary)' : 'transparent',
-                      color: isToday ? '#fff' : 'var(--color-text-primary)',
-                      fontWeight: isToday || isSelected ? 700 : 400,
-                    }}>
+                    style={{ background: isToday ? 'var(--color-primary)' : 'transparent', color: isToday ? '#fff' : 'var(--color-text-primary)', fontWeight: isToday || isSelected ? 700 : 400 }}>
                     {day}
                   </span>
                   {record && <span className="text-xs leading-none" aria-hidden>{getWeatherEmoji(record.weatherState)}</span>}
@@ -155,46 +206,48 @@ export function HistoryCalendar() {
           </div>
         </div>
 
-        {/* 이달의 분석 */}
+        {/* 모바일 — 날짜 선택 시 상세가 캘린더 바로 아래 표시 */}
+        {selectedDate && (
+          <div className="md:hidden">
+            <DetailPanel />
+          </div>
+        )}
+
+        {/* 이달의 분석 — 날짜 미선택 시 바로 붙음, 선택 시 상세 아래로 밀림 */}
         <div className="glass-card shrink-0" style={{ padding: '14px 16px' }}>
-          <p className="text-xs font-semibold mb-3" style={{ color: 'var(--color-text-muted)' }}>
-            {month}월 분석
-          </p>
+          <p className="text-xs font-semibold mb-3 text-text-muted">{month}월 분석</p>
           {!stats ? (
-            <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>기록이 없어요 🌱</p>
+            <p className="text-xs text-text-muted">기록이 없어요 🌱</p>
           ) : (
             <div className="grid grid-cols-2 gap-2">
               <div className="flex flex-col gap-0.5">
-                <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>평균 HP</span>
-                <span className="text-lg font-bold" style={{ color: 'var(--color-text-primary)' }}>{stats.avgHp}</span>
+                <span className="text-xs text-text-muted">평균 HP</span>
+                <span className="text-lg font-bold text-text-primary">{stats.avgHp}</span>
               </div>
               <div className="flex flex-col gap-0.5">
-                <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>이달의 날씨</span>
+                <span className="text-xs text-text-muted">이달의 날씨</span>
                 <span className="text-lg">{getWeatherEmoji(stats.dominantWeather)}</span>
-                <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>{getWeatherLabel(stats.dominantWeather)}</span>
+                <span className="text-xs text-text-secondary">{getWeatherLabel(stats.dominantWeather)}</span>
               </div>
               <div className="flex flex-col gap-0.5">
-                <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>최고 HP</span>
-                <span className="text-base font-semibold" style={{ color: 'var(--color-text-primary)' }}>🏆 {stats.maxHp}</span>
+                <span className="text-xs text-text-muted">최고 HP</span>
+                <span className="text-base font-semibold text-text-primary">🏆 {stats.maxHp}</span>
               </div>
               <div className="flex flex-col gap-0.5">
-                <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>최저 HP</span>
-                <span className="text-base font-semibold" style={{ color: 'var(--color-text-muted)' }}>💀 {stats.minHp}</span>
+                <span className="text-xs text-text-muted">최저 HP</span>
+                <span className="text-base font-semibold text-text-muted">💀 {stats.minHp}</span>
               </div>
-              <div className="col-span-2 flex items-center justify-between pt-1"
-                style={{ borderTop: '1px solid var(--color-border)' }}>
-                <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>총 기록 이벤트</span>
-                <span className="text-xs font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-                  {stats.totalEvents}건 ({stats.recordCount}일)
-                </span>
+              <div className="col-span-2 flex items-center justify-between pt-1" style={{ borderTop: '1px solid var(--color-border)' }}>
+                <span className="text-xs text-text-muted">총 기록 이벤트</span>
+                <span className="text-xs font-semibold text-text-primary">{stats.totalEvents}건 ({stats.recordCount}일)</span>
               </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* 오른쪽 — 선택 날짜 상세 */}
-      <div className="flex-1 min-w-0">
+      {/* 오른쪽 — 데스크탑만 */}
+      <div className="hidden md:block flex-1 min-w-0">
         <AnimatePresence mode="wait">
           {!selectedDate ? (
             <motion.div key="empty"
@@ -203,78 +256,10 @@ export function HistoryCalendar() {
               style={{ minHeight: 200, padding: 40 }}
             >
               <p className="text-3xl mb-3">📅</p>
-              <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>날짜를 선택하면 기록이 표시돼요</p>
-            </motion.div>
-          ) : !selectedRecord ? (
-            <motion.div key="no-record"
-              initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-              className="glass-card flex flex-col items-center justify-center"
-              style={{ minHeight: 200, padding: 40 }}
-            >
-              <p className="text-3xl mb-3">🌱</p>
-              <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>{selectedDate}</p>
-              <p className="text-sm mt-1" style={{ color: 'var(--color-text-muted)' }}>이 날은 기록이 없어요</p>
+              <p className="text-sm text-text-muted">날짜를 선택하면 기록이 표시돼요</p>
             </motion.div>
           ) : (
-            <motion.div key={selectedDate}
-              initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-              className="glass-card flex flex-col gap-4"
-              style={{ padding: '20px 24px' }}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-bold text-base" style={{ color: 'var(--color-text-primary)' }}>
-                    {selectedDate}
-                  </p>
-                  <p className="text-sm mt-0.5" style={{ color: 'var(--color-text-secondary)' }}>
-                    {getWeatherEmoji(selectedRecord.weatherState)}&nbsp;
-                    HP 최종 <strong>{selectedRecord.hp}</strong> · 최저 <strong>{selectedRecord.minHp}</strong>
-                    {selectedRecord.survivalGrade && (
-                      <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-bold"
-                        style={{ background: 'rgba(0,0,0,0.07)', color: 'var(--color-text-primary)' }}>
-                        {selectedRecord.survivalGrade}등급
-                      </span>
-                    )}
-                  </p>
-                </div>
-              </div>
-
-              <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(0,0,0,0.08)' }}>
-                <div className="h-full rounded-full transition-all duration-500"
-                  style={{
-                    width: `${selectedRecord.hp}%`,
-                    background: selectedRecord.hp >= 60 ? '#1A1A1A' : selectedRecord.hp >= 30 ? '#888' : '#BBB',
-                  }} />
-              </div>
-
-              <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 16 }}>
-                <p className="text-xs font-semibold mb-3" style={{ color: 'var(--color-text-muted)' }}>
-                  이벤트 기록 ({selectedRecord.eventLog.length}건)
-                </p>
-                {selectedRecord.eventLog.length === 0 ? (
-                  <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>기록된 이벤트가 없어요</p>
-                ) : (
-                  <ul className="flex flex-col gap-2">
-                    {selectedRecord.eventLog.map((log: any) => (
-                      <li key={log.id} className="flex items-center gap-2 text-sm">
-                        <span className="tabular-nums shrink-0"
-                          style={{ fontSize: 10, color: 'var(--color-text-muted)', width: 36 }}>
-                          {log.timestamp}
-                        </span>
-                        <span className="w-2 h-2 rounded-full shrink-0"
-                          style={{ background: log.hpDelta >= 0 ? '#1A1A1A' : '#BBBBBB' }} aria-hidden />
-                        <span aria-hidden>{log.emoji}</span>
-                        <span className="flex-1 truncate" style={{ color: 'var(--color-text-primary)' }}>{log.name}</span>
-                        <span className="font-semibold tabular-nums shrink-0"
-                          style={{ color: log.hpDelta >= 0 ? '#1A1A1A' : '#999999' }}>
-                          {log.hpDelta >= 0 ? '+' : ''}{log.hpDelta}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </motion.div>
+            <DetailPanel />
           )}
         </AnimatePresence>
       </div>
