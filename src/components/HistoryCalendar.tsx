@@ -89,14 +89,12 @@ export function HistoryCalendar() {
   const goNext = () => month === 12 ? (setYear(y => y + 1), setMonth(1)) : setMonth(m => m + 1);
   const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
 
-  // 날짜 상세 패널
   const DetailPanel = () => (
     <AnimatePresence mode="wait">
       {!selectedDate ? null : !selectedRecord ? (
         <motion.div key="no-record"
           initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-          className="glass-card flex flex-col items-center justify-center"
-          style={{ minHeight: 160, padding: 32 }}
+          className="glass-card flex flex-col items-center justify-center p-8 min-h-[160px]"
         >
           <p className="text-3xl mb-3">🌱</p>
           <p className="text-sm font-medium text-text-primary">{selectedDate}</p>
@@ -105,8 +103,7 @@ export function HistoryCalendar() {
       ) : (
         <motion.div key={selectedDate}
           initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-          className="glass-card flex flex-col gap-4"
-          style={{ padding: '20px 24px' }}
+          className="glass-card flex flex-col gap-4 p-5"
         >
           <div>
             <p className="font-bold text-base text-text-primary">{selectedDate}</p>
@@ -121,11 +118,24 @@ export function HistoryCalendar() {
               )}
             </p>
           </div>
-          <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(0,0,0,0.08)' }}>
-            <div className="h-full rounded-full transition-all duration-500"
-              style={{ width: `${selectedRecord.hp}%`, background: selectedRecord.hp >= 60 ? '#1A1A1A' : selectedRecord.hp >= 30 ? '#888' : '#BBB' }} />
+
+          {/* HP 바 */}
+          <div className="h-2 rounded-full overflow-hidden bg-hp-bg">
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{
+                width: `${selectedRecord.hp}%`,
+                background: selectedRecord.hp >= 60
+                  ? 'var(--color-text-primary)'
+                  : selectedRecord.hp >= 30
+                  ? 'var(--color-text-muted)'
+                  : 'var(--color-faint)',
+              }}
+            />
           </div>
-          <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 16 }}>
+
+          {/* 이벤트 기록 */}
+          <div className="pt-4" style={{ borderTop: '1px solid var(--color-border)' }}>
             <p className="text-xs font-semibold mb-3 text-text-muted">
               이벤트 기록 ({selectedRecord.eventLog.length}건)
             </p>
@@ -135,11 +145,18 @@ export function HistoryCalendar() {
               <ul className="flex flex-col gap-2">
                 {selectedRecord.eventLog.map((log: any) => (
                   <li key={log.id} className="flex items-center gap-2 text-sm">
-                    <span className="tabular-nums shrink-0 text-text-muted" style={{ fontSize: 10, width: 36 }}>{log.timestamp}</span>
-                    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: log.hpDelta >= 0 ? '#1A1A1A' : '#BBBBBB' }} aria-hidden />
+                    <span className="tabular-nums shrink-0 text-text-muted text-[10px] w-9">{log.timestamp}</span>
+                    <span
+                      className="w-2 h-2 rounded-full shrink-0"
+                      style={{ background: log.hpDelta >= 0 ? 'var(--color-text-primary)' : 'var(--color-faint)' }}
+                      aria-hidden
+                    />
                     <span aria-hidden>{log.emoji}</span>
                     <span className="flex-1 truncate text-text-primary">{log.name}</span>
-                    <span className="font-semibold tabular-nums shrink-0" style={{ color: log.hpDelta >= 0 ? '#1A1A1A' : '#999999' }}>
+                    <span
+                      className="font-semibold tabular-nums shrink-0"
+                      style={{ color: log.hpDelta >= 0 ? 'var(--color-text-primary)' : 'var(--color-text-muted)' }}
+                    >
                       {log.hpDelta >= 0 ? '+' : ''}{log.hpDelta}
                     </span>
                   </li>
@@ -153,11 +170,9 @@ export function HistoryCalendar() {
   );
 
   return (
-    <div
-      className="flex flex-col md:flex-row gap-4 p-4 pb-24 md:pb-4"
-      style={{ minHeight: 'calc(100vh - var(--header-height) - var(--bottomnav-height))' }}
-    >
-      {/* 왼쪽 — 캘린더 + (모바일: 선택 시 상세 바로 표시) + 분석 */}
+    <div className="flex flex-col md:flex-row gap-4 p-4 pb-24 md:pb-4 min-h-[calc(100vh-var(--header-height)-var(--bottomnav-height))]">
+
+      {/* 왼쪽 */}
       <div className="w-full md:w-[320px] md:shrink-0 flex flex-col gap-3">
 
         {/* 월 네비게이션 */}
@@ -191,12 +206,22 @@ export function HistoryCalendar() {
               return (
                 <button key={date} type="button"
                   onClick={() => setSelectedDate(isSelected ? null : date)}
-                  className="flex flex-col items-center justify-center py-1 gap-0.5 transition-all focus:outline-none"
-                  style={{ minHeight: 40, background: isSelected ? 'rgba(0,0,0,0.08)' : 'transparent', opacity: isCurrentMonth ? 1 : 0.3, borderRadius: 6 }}
+                  className="flex flex-col items-center justify-center py-1 gap-0.5 transition-all focus:outline-none rounded-[6px]"
+                  style={{
+                    minHeight: 40,
+                    background: isSelected ? 'rgba(0,0,0,0.08)' : 'transparent',
+                    opacity: isCurrentMonth ? 1 : 0.3,
+                  }}
                   aria-pressed={isSelected}
                 >
-                  <span className="text-xs w-5 h-5 flex items-center justify-center rounded-full"
-                    style={{ background: isToday ? 'var(--color-primary)' : 'transparent', color: isToday ? '#fff' : 'var(--color-text-primary)', fontWeight: isToday || isSelected ? 700 : 400 }}>
+                  <span
+                    className="text-xs w-5 h-5 flex items-center justify-center rounded-full"
+                    style={{
+                      background: isToday ? 'var(--color-primary)' : 'transparent',
+                      color: isToday ? 'var(--color-text-inverse)' : 'var(--color-text-primary)',
+                      fontWeight: isToday || isSelected ? 700 : 400,
+                    }}
+                  >
                     {day}
                   </span>
                   {record && <span className="text-xs leading-none" aria-hidden>{getWeatherEmoji(record.weatherState)}</span>}
@@ -206,15 +231,15 @@ export function HistoryCalendar() {
           </div>
         </div>
 
-        {/* 모바일 — 날짜 선택 시 상세가 캘린더 바로 아래 표시 */}
+        {/* 모바일 상세 */}
         {selectedDate && (
           <div className="md:hidden">
             <DetailPanel />
           </div>
         )}
 
-        {/* 이달의 분석 — 날짜 미선택 시 바로 붙음, 선택 시 상세 아래로 밀림 */}
-        <div className="glass-card shrink-0" style={{ padding: '14px 16px' }}>
+        {/* 이달의 분석 */}
+        <div className="glass-card shrink-0 p-4">
           <p className="text-xs font-semibold mb-3 text-text-muted">{month}월 분석</p>
           {!stats ? (
             <p className="text-xs text-text-muted">기록이 없어요 🌱</p>
@@ -252,8 +277,7 @@ export function HistoryCalendar() {
           {!selectedDate ? (
             <motion.div key="empty"
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="glass-card flex flex-col items-center justify-center"
-              style={{ minHeight: 200, padding: 40 }}
+              className="glass-card flex flex-col items-center justify-center min-h-[200px] p-10"
             >
               <p className="text-3xl mb-3">📅</p>
               <p className="text-sm text-text-muted">날짜를 선택하면 기록이 표시돼요</p>

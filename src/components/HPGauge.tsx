@@ -69,22 +69,21 @@ export function HPGauge() {
 
   return (
     <section
-      className="glass-card h-full flex flex-col justify-center"
-      style={{ padding: '12px 16px' }}
+      className="glass-card h-full flex flex-col justify-center px-md py-sm"
       data-testid="hp-gauge"
       aria-label="현재 HP 게이지"
     >
       {/* HP 수치 + 상태 뱃지 */}
       <div className="flex items-center justify-between gap-2 mb-2">
-        <span className="text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }}>HP</span>
+        <span className="text-sm font-medium text-text-secondary">HP</span>
         <div className="flex items-center gap-1.5">
           <span
-            className="text-xs font-medium px-2 py-0.5 rounded-full"
-            style={{ background: 'rgba(0,0,0,0.07)', color: 'var(--color-text-secondary)' }}
+            className="text-xs font-medium px-2 py-0.5 rounded-full text-text-secondary"
+            style={{ background: 'rgba(0,0,0,0.07)' }}
           >
             {status.emoji} {status.label}
           </span>
-          <span className="text-xl font-bold tabular-nums" style={{ color: 'var(--color-hp-text)' }} data-testid="hp-value">
+          <span className="text-xl font-bold tabular-nums text-hp-text" data-testid="hp-value">
             {hp}
           </span>
         </div>
@@ -98,20 +97,17 @@ export function HPGauge() {
               key={toast}
               initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
               transition={{ duration: 0.2 }}
-              className="absolute inset-0 text-xs text-center font-medium"
-              style={{ color: 'var(--color-text-secondary)' }}
+              className="absolute inset-0 text-xs text-center font-medium text-text-secondary"
             >
               {toast}
             </motion.p>
           )}
         </AnimatePresence>
         {fixedMessage && (
-          <p className="text-xs text-center font-medium" style={{ color: 'var(--color-text-secondary)' }}>
-            {fixedMessage}
-          </p>
+          <p className="text-xs text-center font-medium text-text-secondary">{fixedMessage}</p>
         )}
         {isCritical && !toast && !fixedMessage && (
-          <p className="text-xs text-center animate-pulse" style={{ color: 'var(--color-text-muted)' }}>
+          <p className="text-xs text-center animate-pulse text-text-muted">
             ⚠️ 위험! 간식이 필요한 순간이에요
           </p>
         )}
@@ -119,26 +115,26 @@ export function HPGauge() {
 
       {/* HP 바 */}
       <div
-        className="h-3 rounded-[var(--radius-full)] overflow-hidden"
-        style={{ background: 'rgba(0,0,0,0.08)' }}
+        className="h-3 rounded-full overflow-hidden bg-hp-bg"
         role="progressbar" aria-valuenow={hp} aria-valuemin={0} aria-valuemax={100}
       >
         <motion.div
-          className={`h-full rounded-[var(--radius-full)] relative overflow-hidden ${isCritical ? 'hp-pulse' : ''}`}
+          className={`h-full rounded-full relative overflow-hidden ${isCritical ? 'hp-pulse' : ''}`}
           style={{ background: getHpBarGradient(weatherState) }}
           initial={false}
           animate={{ width: `${hp}%` }}
           transition={{ type: 'easeOut', duration: 0.4 }}
         >
+          {/* 하이라이트 — 디자인 의도상 고정 그라데이션 */}
           <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.3) 0%, transparent 70%)' }} />
         </motion.div>
       </div>
 
-      {/* 바 아래 — HP 범위 힌트 */}
+      {/* HP 범위 힌트 */}
       <div className="flex justify-between mt-1">
-        <span className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>0</span>
-        <span className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>50</span>
-        <span className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>100</span>
+        <span className="text-[10px] text-text-muted">0</span>
+        <span className="text-[10px] text-text-muted">50</span>
+        <span className="text-[10px] text-text-muted">100</span>
       </div>
     </section>
   );

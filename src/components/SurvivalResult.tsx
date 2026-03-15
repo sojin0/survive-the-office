@@ -26,6 +26,7 @@ function useCountUp(target: number, duration = 1200) {
   return val;
 }
 
+// 등급별 색상은 디자인 의도상 고정값 사용 (토큰 시스템 외부)
 const GRADE_STYLES: Record<string, {
   bg: string; glow: string; textColor: string; particles: boolean; shake: boolean;
 }> = {
@@ -46,7 +47,7 @@ function Particles({ color }: { color: string }) {
     dur: 1.2 + Math.random() * 0.8,
   }));
   return (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-[var(--radius-lg)]">
+    <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-lg">
       {particles.map((p) => (
         <motion.div
           key={p.id}
@@ -80,7 +81,7 @@ export function SurvivalResult() {
 
   const meta = getGradeMeta(survivalGrade);
   const top3 = getTop3Events(eventLog);
-  const style = GRADE_STYLES[survivalGrade] ?? GRADE_STYLES['C'];
+  const gradeStyle = GRADE_STYLES[survivalGrade] ?? GRADE_STYLES['C'];
 
   return (
     <motion.section
@@ -92,17 +93,16 @@ export function SurvivalResult() {
     >
       {/* 등급 카드 */}
       <div
-        className="relative rounded-[var(--radius-lg)] p-8 text-center mb-6 overflow-hidden"
-        style={{ background: style.bg }}
+        className="relative rounded-lg p-8 text-center mb-6 overflow-hidden"
+        style={{ background: gradeStyle.bg }}
       >
-        {style.particles && <Particles color={style.glow} />}
+        {gradeStyle.particles && <Particles color={gradeStyle.glow} />}
 
-        {/* 등급 글자 */}
         <motion.p
           className="relative text-7xl font-black mb-2 tabular-nums"
-          style={{ color: style.textColor, textShadow: `0 0 40px ${style.glow}88` }}
+          style={{ color: gradeStyle.textColor, textShadow: `0 0 40px ${gradeStyle.glow}88` }}
           initial={{ scale: 0.3, opacity: 0 }}
-          animate={style.shake
+          animate={gradeStyle.shake
             ? { scale: [0.3, 1.1, 0.95, 1], opacity: 1, x: [0, -6, 6, -4, 4, 0] }
             : { scale: [0.3, 1.2, 0.95, 1], opacity: 1 }
           }
@@ -112,75 +112,60 @@ export function SurvivalResult() {
           {survivalGrade}
         </motion.p>
 
-        {/* 빛나는 링 — S/A만 */}
-        {style.particles && (
+        {gradeStyle.particles && (
           <motion.div
-            className="absolute inset-0 rounded-[var(--radius-lg)] pointer-events-none"
-            style={{ border: `2px solid ${style.glow}`, opacity: 0 }}
+            className="absolute inset-0 rounded-lg pointer-events-none"
+            style={{ border: `2px solid ${gradeStyle.glow}`, opacity: 0 }}
             animate={{ opacity: [0, 0.6, 0], scale: [0.95, 1.02, 1.05] }}
             transition={{ duration: 1.2, repeat: 3 }}
           />
         )}
 
-        <motion.p
-          className="text-3xl mb-3"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          aria-hidden
-        >
+        <motion.p className="text-3xl mb-3" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} aria-hidden>
           {meta.emoji}
         </motion.p>
         <motion.h2
           className="text-xl font-bold mb-2"
-          style={{ color: style.textColor }}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
+          style={{ color: gradeStyle.textColor }}
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
         >
           {meta.title}
         </motion.h2>
         <motion.p
-          className="text-sm"
-          style={{ color: style.textColor, opacity: 0.8 }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.8 }}
-          transition={{ delay: 0.75 }}
+          className="text-sm opacity-80"
+          style={{ color: gradeStyle.textColor }}
+          initial={{ opacity: 0 }} animate={{ opacity: 0.8 }} transition={{ delay: 0.75 }}
         >
           {meta.comment}
         </motion.p>
       </div>
 
-      {/* HP 요약 — 카운트업 */}
+      {/* HP 요약 */}
       <motion.div
-        className="rounded-[var(--radius-lg)] p-[var(--spacing-lg)] bg-white/90 shadow-card mb-4"
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
+        className="rounded-lg p-lg bg-white/90 shadow-card mb-4"
+        initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
       >
-        <h3 className="text-sm font-medium mb-3" style={{ color: 'var(--color-text-secondary)' }}>
-          HP 요약
-        </h3>
+        <h3 className="text-sm font-medium mb-3 text-text-secondary">HP 요약</h3>
         <div className="flex items-center justify-between gap-2 text-sm mb-3">
           <div className="flex flex-col items-center gap-0.5">
-            <span style={{ color: 'var(--color-text-muted)', fontSize: 11 }}>시작</span>
-            <span className="text-2xl font-bold tabular-nums" style={{ color: 'var(--color-text-primary)' }}>80</span>
+            <span className="text-[11px] text-text-muted">시작</span>
+            <span className="text-2xl font-bold tabular-nums text-text-primary">80</span>
           </div>
-          <div className="flex-1 mx-2 h-px" style={{ background: 'var(--color-border)' }} />
+          <div className="flex-1 mx-2 h-px bg-[var(--color-border)]" />
           <div className="flex flex-col items-center gap-0.5">
-            <span style={{ color: 'var(--color-text-muted)', fontSize: 11 }}>최저</span>
-            <span className="text-2xl font-bold tabular-nums" style={{ color: 'var(--color-text-muted)' }}>{countedMin}</span>
+            <span className="text-[11px] text-text-muted">최저</span>
+            <span className="text-2xl font-bold tabular-nums text-text-muted">{countedMin}</span>
           </div>
-          <div className="flex-1 mx-2 h-px" style={{ background: 'var(--color-border)' }} />
+          <div className="flex-1 mx-2 h-px bg-[var(--color-border)]" />
           <div className="flex flex-col items-center gap-0.5">
-            <span style={{ color: 'var(--color-text-muted)', fontSize: 11 }}>최종</span>
-            <span className="text-2xl font-bold tabular-nums" style={{ color: style.textColor }}>{countedHp}</span>
+            <span className="text-[11px] text-text-muted">최종</span>
+            <span className="text-2xl font-bold tabular-nums" style={{ color: gradeStyle.textColor }}>{countedHp}</span>
           </div>
         </div>
-        <div className="h-2 rounded-[var(--radius-full)] overflow-hidden" style={{ background: 'var(--color-hp-bar-bg)' }}>
+        <div className="h-2 rounded-full overflow-hidden bg-hp-bg">
           <motion.div
-            className="h-full rounded-[var(--radius-full)]"
-            style={{ background: style.glow }}
+            className="h-full rounded-full"
+            style={{ background: gradeStyle.glow }}
             initial={{ width: 0 }}
             animate={{ width: `${hp}%` }}
             transition={{ delay: 0.6, duration: 1, ease: 'easeOut' }}
@@ -191,14 +176,10 @@ export function SurvivalResult() {
       {/* TOP 3 */}
       {top3.length > 0 && (
         <motion.div
-          className="rounded-[var(--radius-lg)] p-[var(--spacing-lg)] bg-white/90 shadow-card mb-6"
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.55 }}
+          className="rounded-lg p-lg bg-white/90 shadow-card mb-6"
+          initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}
         >
-          <h3 className="text-sm font-medium mb-3" style={{ color: 'var(--color-text-secondary)' }}>
-            오늘의 TOP 3 이벤트
-          </h3>
+          <h3 className="text-sm font-medium mb-3 text-text-secondary">오늘의 TOP 3 이벤트</h3>
           <ul className="space-y-2">
             {top3.map((event, i) => (
               <motion.li
@@ -209,12 +190,12 @@ export function SurvivalResult() {
                 transition={{ delay: 0.65 + i * 0.1 }}
                 data-testid="top3-event"
               >
-                <span style={{ color: 'var(--color-text-muted)', width: 20, fontSize: 12 }}>{i + 1}.</span>
+                <span className="text-[12px] w-5 text-text-muted">{i + 1}.</span>
                 <span aria-hidden>{event.emoji}</span>
-                <span className="flex-1" style={{ color: 'var(--color-text-primary)' }}>{event.name}</span>
+                <span className="flex-1 text-text-primary">{event.name}</span>
                 <span
                   className="font-bold tabular-nums"
-                  style={{ color: event.hpDelta >= 0 ? style.textColor : 'var(--color-text-muted)' }}
+                  style={{ color: event.hpDelta >= 0 ? gradeStyle.textColor : 'var(--color-text-muted)' }}
                 >
                   {event.hpDelta >= 0 ? '+' : ''}{event.hpDelta}
                 </span>
@@ -231,8 +212,8 @@ export function SurvivalResult() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.25 }}
-            className="fixed bottom-8 left-4 right-4 z-50 mx-auto max-w-sm py-3 px-4 rounded-[var(--radius-md)] text-center text-sm font-medium"
-            style={{ background: 'var(--color-surface-strong)', color: 'var(--color-text-primary)', boxShadow: 'var(--shadow-elevated)' }}
+            className="fixed bottom-8 left-4 right-4 z-50 mx-auto max-w-sm py-3 px-4 rounded-md text-center text-sm font-medium shadow-elevated text-text-primary"
+            style={{ background: 'var(--color-surface-strong)' }}
           >
             내일 출근해서 만나요! 🌅
           </motion.div>
@@ -242,7 +223,7 @@ export function SurvivalResult() {
       <motion.button
         type="button"
         onClick={handleViewDashboard}
-        className="w-full py-3 rounded-[var(--radius-md)] font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-text-primary)]"
+        className="w-full py-3 rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-text-primary)]"
         style={{
           background: 'var(--color-btn-primary-bg)',
           color: 'var(--color-btn-primary-text)',
