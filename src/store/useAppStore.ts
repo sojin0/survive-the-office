@@ -12,7 +12,7 @@ type AppStore = {
   weatherState: WeatherState;
   eventLog: EventLog[];
   isRetired: boolean;
-  isViewingDashboard: boolean; // 퇴근 후 대시보드 열람 모드
+  isViewingDashboard: boolean;
   survivalGrade: SurvivalGrade | null;
   minHp: number;
   oneLiner: string;
@@ -102,7 +102,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
     saveDayToHistory({ date: today, hp, minHp, eventLog, weatherState, survivalGrade: grade });
   },
 
-  // isRetired 유지 + 대시보드 열람 모드 진입 (버튼 비활성화 유지)
   viewDashboard() {
     set({ isViewingDashboard: true });
   },

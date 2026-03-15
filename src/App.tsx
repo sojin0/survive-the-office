@@ -27,6 +27,8 @@ function App() {
 
   const isLoggedIn = userName.length > 0;
   const isDarkWeather = weatherState === 'stormy' || weatherState === 'dead';
+
+  // 퇴근했지만 대시보드 보기 모드면 MainLayout 표시
   const showDashboard = !isRetired || isViewingDashboard;
 
   if (!isLoggedIn) {
@@ -54,8 +56,8 @@ function App() {
         {showDashboard ? <MainLayout /> : <SurvivalResult />}
       </div>
 
-      {/* 퇴근하기 버튼 + 확인 모달 — 모바일 전용 */}
-      {!isRetired && !isViewingDashboard && (
+      {/* 퇴근하기 버튼 — 모바일 전용 */}
+      {!isViewingDashboard && (
         <div className="md:hidden fixed left-0 right-0 flex justify-center px-4 z-50" style={{ bottom: 68 }}>
           <AnimatePresence>
             {showRetireConfirm && (
@@ -69,16 +71,17 @@ function App() {
           {!showRetireConfirm && (
             <button
               type="button"
-              onClick={() => setShowRetireConfirm(true)}
-              className="w-full max-w-sm py-3.5 rounded-[var(--radius-full)] font-bold text-base transition-all duration-200 active:scale-[0.98] focus:outline-none"
+              onClick={() => !isRetired && setShowRetireConfirm(true)}
+              disabled={isRetired}
+              className="w-full max-w-sm py-3.5 rounded-[var(--radius-full)] font-bold text-base transition-all duration-200 active:scale-[0.98] focus:outline-none disabled:cursor-not-allowed"
               style={{
-                background: 'var(--color-btn-primary-bg)',
-                color: 'var(--color-btn-primary-text)',
-                boxShadow: '0 4px 24px rgba(0,0,0,0.25)',
+                background: isRetired ? 'rgba(0,0,0,0.12)' : 'var(--color-btn-primary-bg)',
+                color: isRetired ? 'var(--color-text-muted)' : 'var(--color-btn-primary-text)',
+                boxShadow: isRetired ? 'none' : '0 4px 24px rgba(0,0,0,0.25)',
               }}
               data-testid="btn-checkout-mobile"
             >
-              🚪 퇴근하기
+              {isRetired ? '🌙 오늘 퇴근 완료!' : '🚪 퇴근하기'}
             </button>
           )}
         </div>

@@ -107,7 +107,7 @@ export function TimelinePanel() {
         style={{ borderBottom: '1px solid var(--color-border)', paddingTop: 14, paddingBottom: 14 }}>
         <h3 className="text-sm font-semibold text-text-primary">오늘의 기록</h3>
         <AnimatePresence>
-          {eventLog.length > 0 && !isReadOnly && (
+          {eventLog.length > 0 && !isReadOnly && !isRetired && (
             <motion.button type="button" onClick={handleClearAll}
               initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.15 }}
@@ -128,84 +128,91 @@ export function TimelinePanel() {
           </div>
         ) : (
           <>
-          {/* 이벤트 목록 — relative 컨테이너 안에서 라인 렌더링 */}
-          <div ref={eventListRef} className="relative" style={{ padding: '8px 8px 0 0' }}>
-            {eventLog.length > 0 && (
-              <div className="pointer-events-none" style={{ position: 'absolute', top: 0, bottom: 0, left: 52, width: 2, background: 'var(--color-timeline-line)' }} aria-hidden />
-            )}
-            <AnimatePresence initial={false}>
-              {eventLog.map((log) => (
-                <motion.div key={log.id}
-                  initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, height: 0, overflow: 'hidden' }}
-                  transition={{ duration: 0.18 }}
-                  className="relative flex items-center"
-                  style={{ paddingTop: 8, paddingBottom: 8 }}>
-                  <span className="shrink-0 tabular-nums text-right" style={{ fontSize: 10, color: 'var(--color-text-muted)', width: 44, minWidth: 44 }}>
-                    {log.timestamp}
-                  </span>
-                  <div style={{ width: 4, minWidth: 4, flexShrink: 0 }} />
-                  <span className="absolute rounded-full" style={{ width: 10, height: 10, left: 48, top: '50%', transform: 'translateY(-50%)', zIndex: 2, background: log.hpDelta >= 0 ? dotPositive : dotNegative, boxShadow: '0 0 0 2px var(--color-surface)' }} aria-hidden />
-                  <div className="flex items-center gap-1.5 min-w-0 flex-1" style={{ paddingLeft: 16 }}>
-                    <span className="text-sm shrink-0" aria-hidden style={{ opacity: log.hpDelta >= 0 ? 1 : isDark ? 0.5 : 0.7 }}>{log.emoji}</span>
-                    <span className="text-xs truncate flex-1" style={{ color: log.hpDelta >= 0 ? textPositive : textNegative }}>{log.name}</span>
-                    <span className="text-xs font-semibold tabular-nums shrink-0" style={{ color: log.hpDelta >= 0 ? textPositive : textNegative }}>
-                      {log.hpDelta >= 0 ? '+' : ''}{log.hpDelta}
+            {/* 이벤트 목록 */}
+            <div ref={eventListRef} className="relative" style={{ padding: '8px 8px 0 0' }}>
+              {eventLog.length > 0 && (
+                <div className="pointer-events-none" style={{ position: 'absolute', top: 0, bottom: 0, left: 52, width: 2, background: 'var(--color-timeline-line)' }} aria-hidden />
+              )}
+              <AnimatePresence initial={false}>
+                {eventLog.map((log) => (
+                  <motion.div key={log.id}
+                    initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, height: 0, overflow: 'hidden' }}
+                    transition={{ duration: 0.18 }}
+                    className="relative flex items-center"
+                    style={{ paddingTop: 8, paddingBottom: 8 }}>
+                    <span className="shrink-0 tabular-nums text-right" style={{ fontSize: 10, color: 'var(--color-text-muted)', width: 44, minWidth: 44 }}>
+                      {log.timestamp}
                     </span>
-                  </div>
-                  {!isReadOnly && (
-                    <button type="button" onClick={() => removeEvent(log.id)}
-                      className="shrink-0 w-5 h-5 ml-1 flex items-center justify-center rounded-full opacity-30 hover:opacity-100 transition-opacity duration-150 focus:outline-none"
-                      style={{ background: 'rgba(0,0,0,0.10)', color: 'var(--color-text-muted)', cursor: 'pointer' }}
-                      aria-label={`${log.name} 삭제`}>
-                      <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 1l6 6M7 1L1 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                    </button>
-                  )}
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
-          {/* reactions — 라인 영역 밖에 렌더링 */}
-          {reactionEntries.length > 0 && (
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}
-              style={{ marginTop: 8, paddingTop: 12, paddingLeft: 8, paddingBottom: 8, borderTop: '1px solid var(--color-border)' }}>
-              <p className="text-xs font-medium mb-2 text-text-muted" style={{ paddingLeft: 4 }}>팀원 응원 도착 🎉</p>
-              <div className="flex flex-wrap gap-2 px-1">
-                {reactionEntries.map(({ emoji, count }) => (
-                  <div key={emoji} className="flex items-center gap-1 px-3 py-1.5 rounded-full text-sm text-text-secondary" style={{ background: 'rgba(0,0,0,0.06)' }}>
-                    <span>{emoji}</span>
-                    <span className="text-xs font-medium tabular-nums">{count}</span>
-                  </div>
+                    <div style={{ width: 4, minWidth: 4, flexShrink: 0 }} />
+                    <span className="absolute rounded-full" style={{ width: 10, height: 10, left: 48, top: '50%', transform: 'translateY(-50%)', zIndex: 2, background: log.hpDelta >= 0 ? dotPositive : dotNegative, boxShadow: '0 0 0 2px var(--color-surface)' }} aria-hidden />
+                    <div className="flex items-center gap-1.5 min-w-0 flex-1" style={{ paddingLeft: 16 }}>
+                      <span className="text-sm shrink-0" aria-hidden style={{ opacity: log.hpDelta >= 0 ? 1 : isDark ? 0.5 : 0.7 }}>{log.emoji}</span>
+                      <span className="text-xs truncate flex-1" style={{ color: log.hpDelta >= 0 ? textPositive : textNegative }}>{log.name}</span>
+                      <span className="text-xs font-semibold tabular-nums shrink-0" style={{ color: log.hpDelta >= 0 ? textPositive : textNegative }}>
+                        {log.hpDelta >= 0 ? '+' : ''}{log.hpDelta}
+                      </span>
+                    </div>
+                    {!isReadOnly && !isRetired && (
+                      <button type="button" onClick={() => removeEvent(log.id)}
+                        className="shrink-0 w-5 h-5 ml-1 flex items-center justify-center rounded-full opacity-30 hover:opacity-100 transition-opacity duration-150 focus:outline-none"
+                        style={{ background: 'rgba(0,0,0,0.10)', color: 'var(--color-text-muted)', cursor: 'pointer' }}
+                        aria-label={`${log.name} 삭제`}>
+                        <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 1l6 6M7 1L1 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                      </button>
+                    )}
+                  </motion.div>
                 ))}
-              </div>
-            </motion.div>
-          )}
+              </AnimatePresence>
+            </div>
+
+            {/* 팀원 응원 */}
+            {reactionEntries.length > 0 && (
+              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}
+                style={{ marginTop: 8, paddingTop: 12, paddingLeft: 8, paddingBottom: 8, borderTop: '1px solid var(--color-border)' }}>
+                <p className="text-xs font-medium mb-2 text-text-muted" style={{ paddingLeft: 4 }}>팀원 응원 도착 🎉</p>
+                <div className="flex flex-wrap gap-2 px-1">
+                  {reactionEntries.map(({ emoji, count }) => (
+                    <div key={emoji} className="flex items-center gap-1 px-3 py-1.5 rounded-full text-sm text-text-secondary" style={{ background: 'rgba(0,0,0,0.06)' }}>
+                      <span>{emoji}</span>
+                      <span className="text-xs font-medium tabular-nums">{count}</span>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
           </>
         )}
       </div>
 
-      {/* 퇴근하기 버튼 — 데스크탑만 */}
-      {!isReadOnly && (
-        <div className="hidden md:block shrink-0">
-          <AnimatePresence>
-            {showRetireConfirm && (
-              <RetireConfirmModal hp={hp}
-                onConfirm={() => { retire(); setShowRetireConfirm(false); }}
-                onCancel={() => setShowRetireConfirm(false)} />
-            )}
-          </AnimatePresence>
-          {!showRetireConfirm && (
-            <div className="px-3 pt-3 pb-4">
-              <button type="button" onClick={() => setShowRetireConfirm(true)}
-                className="w-full py-3 rounded-full font-bold text-sm transition-all duration-200 active:scale-[0.98] focus:outline-none"
-                style={{ background: 'var(--color-btn-primary-bg)', color: 'var(--color-btn-primary-text)', boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}
-                data-testid="btn-checkout">
-                🚪 퇴근하기
-              </button>
-            </div>
+      {/* 퇴근하기 버튼 — 데스크탑만, 퇴근 후에도 비활성화 상태로 표시 */}
+      <div className="hidden md:block shrink-0">
+        <AnimatePresence>
+          {showRetireConfirm && (
+            <RetireConfirmModal hp={hp}
+              onConfirm={() => { retire(); setShowRetireConfirm(false); }}
+              onCancel={() => setShowRetireConfirm(false)} />
           )}
-        </div>
-      )}
+        </AnimatePresence>
+        {!showRetireConfirm && (
+          <div className="px-3 pt-3 pb-4" style={{ borderTop: '1px solid var(--color-border)' }}>
+            <button
+              type="button"
+              onClick={() => !isRetired && setShowRetireConfirm(true)}
+              disabled={isRetired}
+              className="w-full py-3 rounded-full font-bold text-sm transition-all duration-200 active:scale-[0.98] focus:outline-none disabled:cursor-not-allowed"
+              style={{
+                background: isRetired ? 'rgba(0,0,0,0.08)' : 'var(--color-btn-primary-bg)',
+                color: isRetired ? 'var(--color-text-muted)' : 'var(--color-btn-primary-text)',
+                boxShadow: isRetired ? 'none' : '0 4px 20px rgba(0,0,0,0.15)',
+              }}
+              data-testid="btn-checkout"
+            >
+              {isRetired ? '🌙 오늘 퇴근 완료!' : '🚪 퇴근하기'}
+            </button>
+          </div>
+        )}
+      </div>
     </aside>
   );
 }
