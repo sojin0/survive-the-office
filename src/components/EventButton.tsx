@@ -46,15 +46,19 @@ export function EventButton({ event }: EventButtonProps) {
         disabled={isRetired}
         whileHover={!isRetired ? { scale: 1.03, y: -1 } : undefined}
         whileTap={!isRetired ? { scale: 0.97 } : undefined}
-        className={`
-          w-full rounded-md p-3 text-left
+        className="
+          w-full rounded-[var(--radius-md)] p-3 text-left
           flex items-center gap-2 min-h-[52px]
-          shadow-card
           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-primary)]
           disabled:opacity-40 disabled:cursor-not-allowed
           transition-shadow duration-150
-          ${isPositive ? 'bg-positive-bg' : 'bg-negative-bg'}
-        `}
+        "
+        style={{
+          background: isPositive
+            ? 'var(--color-positive-bg)'
+            : 'var(--color-negative-bg)',
+          boxShadow: 'var(--shadow-card)',
+        }}
         data-testid={`event-${event.id}`}
         aria-label={`${event.name} ${deltaText} HP`}
       >
@@ -64,16 +68,21 @@ export function EventButton({ event }: EventButtonProps) {
         </span>
 
         {/* 이벤트명 */}
-        <span className="flex-1 text-sm font-medium text-text-primary truncate">
+        <span
+          className="flex-1 text-sm font-medium truncate"
+          style={{ color: 'var(--color-text-primary)' }}
+        >
           {event.name}
         </span>
 
         {/* HP 변동값 */}
         <span
-          className={`
-            text-sm font-bold tabular-nums shrink-0
-            ${isPositive ? 'text-positive-text' : 'text-negative-text'}
-          `}
+          className="text-sm font-bold tabular-nums shrink-0"
+          style={{
+            color: isPositive
+              ? 'var(--color-positive-text)'
+              : 'var(--color-negative-text)',
+          }}
         >
           {deltaText}
         </span>
