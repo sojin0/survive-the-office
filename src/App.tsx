@@ -56,8 +56,8 @@ function App() {
         {showDashboard ? <MainLayout /> : <SurvivalResult />}
       </div>
 
-      {/* 퇴근하기 버튼 — 모바일 전용 */}
-      {!isViewingDashboard && (
+      {/* 퇴근하기 버튼 — 모바일 전용, 결과 화면에서는 숨김 */}
+      {!isViewingDashboard && !isRetired && (
         <div className="md:hidden fixed left-0 right-0 flex justify-center px-4 z-50" style={{ bottom: 68 }}>
           <AnimatePresence>
             {showRetireConfirm && (
