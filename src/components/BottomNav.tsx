@@ -14,12 +14,10 @@ const TABS: { id: TabId; label: string; icon: string }[] = [
 export function BottomNav({ activeTab, onTab }: BottomNavProps) {
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-40"
+      className="fixed bottom-0 left-0 right-0 z-40 h-[56px] backdrop-blur-md"
       style={{
-        background: 'rgba(255,255,255,0.95)',
-        backdropFilter: 'blur(12px)',
-        borderTop: '1px solid rgba(0,0,0,0.08)',
-        height: 56,
+        background: 'var(--color-surface-strong)',
+        borderTop: '1px solid var(--color-border)',
       }}
       role="tablist"
       aria-label="메인 메뉴"
@@ -35,14 +33,12 @@ export function BottomNav({ activeTab, onTab }: BottomNavProps) {
               aria-selected={isActive}
               aria-label={tab.label}
               onClick={() => onTab(tab.id)}
-              className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all duration-150"
-              style={{
-                color: isActive ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                fontWeight: isActive ? 600 : 400,
-              }}
+              className={`flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all duration-150 ${
+                isActive ? 'font-semibold text-[var(--color-primary)]' : 'font-normal text-text-muted'
+              }`}
             >
               <span className="text-lg" aria-hidden>{tab.icon}</span>
-              <span style={{ fontSize: 10 }}>{tab.label}</span>
+              <span className="text-[10px]">{tab.label}</span>
             </button>
           );
         })}

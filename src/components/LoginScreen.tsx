@@ -17,6 +17,17 @@ const PRESET_TEAMS = [
   'IT개발본부 AX개발팀',
 ];
 
+const inputBase = {
+  outline: 'none',
+  color: 'var(--color-text-primary)',
+} as const;
+
+const inputStyle = (focused: boolean) => ({
+  ...inputBase,
+  border: focused ? '2px solid var(--color-primary)' : '1.5px solid rgba(0,0,0,0.15)',
+  boxShadow: focused ? '0 0 0 4px rgba(26,26,26,0.08)' : 'var(--shadow-card)',
+});
+
 export function LoginScreen() {
   const login = useAuthStore((s) => s.login);
   const [name, setName] = useState('');
@@ -50,12 +61,10 @@ export function LoginScreen() {
 
         {/* 타이틀 */}
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
+          <h1 className="text-3xl font-bold text-text-primary">
             오늘 회사에서 살아남기
           </h1>
-          <p className="text-sm mt-2" style={{ color: 'var(--color-text-secondary)' }}>
-            직장인 생존 대시보드
-          </p>
+          <p className="text-sm mt-2 text-text-secondary">직장인 생존 대시보드</p>
         </div>
 
         {/* 폼 */}
@@ -63,9 +72,7 @@ export function LoginScreen() {
 
           {/* 이름 입력 */}
           <label className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
-              이름
-            </span>
+            <span className="text-sm font-medium text-text-primary">이름</span>
             <input
               type="text"
               value={name}
@@ -73,17 +80,8 @@ export function LoginScreen() {
               onFocus={() => setFocused('name')}
               onBlur={() => setFocused(null)}
               placeholder="이름을 입력하세요"
-              className="w-full px-4 py-3 rounded-[var(--radius-md)] bg-white transition-all duration-150"
-              style={{
-                border: focused === 'name'
-                  ? '2px solid var(--color-primary)'
-                  : '1.5px solid rgba(0,0,0,0.15)',
-                outline: 'none',
-                boxShadow: focused === 'name'
-                  ? '0 0 0 4px rgba(26,26,26,0.08)'
-                  : 'var(--shadow-card)',
-                color: 'var(--color-text-primary)',
-              }}
+              className="w-full px-4 py-3 rounded-md bg-white transition-all duration-150"
+              style={inputStyle(focused === 'name')}
               required
               autoComplete="name"
             />
@@ -91,26 +89,16 @@ export function LoginScreen() {
 
           {/* 팀 선택 */}
           <div className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
-              팀
-            </span>
-
+            <span className="text-sm font-medium text-text-primary">팀</span>
             {!isCustomTeam ? (
               <select
                 value={team}
                 onChange={handleTeamChange}
                 onFocus={() => setFocused('team')}
                 onBlur={() => setFocused(null)}
-                className="w-full px-4 py-3 rounded-[var(--radius-md)] bg-white cursor-pointer transition-all duration-150 appearance-none"
+                className="w-full px-4 py-3 rounded-md bg-white cursor-pointer transition-all duration-150 appearance-none"
                 style={{
-                  border: focused === 'team'
-                    ? '2px solid var(--color-primary)'
-                    : '1.5px solid rgba(0,0,0,0.15)',
-                  outline: 'none',
-                  boxShadow: focused === 'team'
-                    ? '0 0 0 4px rgba(26,26,26,0.08)'
-                    : 'var(--shadow-card)',
-                  color: 'var(--color-text-primary)',
+                  ...inputStyle(focused === 'team'),
                   paddingRight: '2.5rem',
                   backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
                   backgroundRepeat: 'no-repeat',
@@ -134,24 +122,15 @@ export function LoginScreen() {
                   onBlur={() => setFocused(null)}
                   placeholder="팀 이름을 입력하세요"
                   autoFocus
-                  className="flex-1 px-4 py-3 rounded-[var(--radius-md)] bg-white transition-all duration-150"
-                  style={{
-                    border: focused === 'customTeam'
-                      ? '2px solid var(--color-primary)'
-                      : '1.5px solid rgba(0,0,0,0.15)',
-                    outline: 'none',
-                    boxShadow: focused === 'customTeam'
-                      ? '0 0 0 4px rgba(26,26,26,0.08)'
-                      : 'var(--shadow-card)',
-                    color: 'var(--color-text-primary)',
-                  }}
+                  className="flex-1 px-4 py-3 rounded-md bg-white transition-all duration-150"
+                  style={inputStyle(focused === 'customTeam')}
                   required
                 />
                 <button
                   type="button"
-                  onClick={() => { setIsCustomTeam(false); setTeam(PRESET_TEAMS[0]); }}
-                  className="px-3 py-2 rounded-[var(--radius-md)] text-sm transition-all"
-                  style={{ background: 'rgba(0,0,0,0.07)', color: 'var(--color-text-secondary)' }}
+                  onClick={() => { setIsCustomTeam(false); setTeam(''); }}
+                  className="px-3 py-2 rounded-md text-sm transition-all text-text-secondary"
+                  style={{ background: 'rgba(0,0,0,0.07)' }}
                 >
                   취소
                 </button>
@@ -159,27 +138,25 @@ export function LoginScreen() {
             )}
           </div>
 
-          {/* 메인 CTA 버튼 */}
+          {/* CTA 버튼 */}
           <button
             type="submit"
-            className="w-full py-3.5 rounded-[var(--radius-full)] font-bold text-base transition-all duration-150 hover:-translate-y-0.5 active:scale-[0.98]"
+            className="w-full py-3.5 rounded-full font-bold text-base transition-all duration-150 hover:-translate-y-0.5 active:scale-[0.98] shadow-elevated"
             style={{
               background: 'var(--color-btn-primary-bg)',
               color: 'var(--color-btn-primary-text)',
-              boxShadow: 'var(--shadow-elevated)',
             }}
           >
             오늘도 살아남으러 가기 🚀
           </button>
         </form>
 
-        {/* 구분선 + 팀 초대 링크 */}
+        {/* 구분선 */}
         <div className="mt-8 flex items-center gap-3">
           <div className="flex-1 h-px" style={{ background: 'rgba(0,0,0,0.12)' }} />
           <button
             type="button"
-            className="text-sm transition-colors duration-150 hover:underline shrink-0"
-            style={{ color: 'var(--color-text-secondary)' }}
+            className="text-sm transition-colors duration-150 hover:underline shrink-0 text-text-secondary"
           >
             팀 초대 링크로 입장하기
           </button>
@@ -190,8 +167,8 @@ export function LoginScreen() {
         <div className="mt-6 flex flex-col gap-2">
           <button
             type="button"
-            className="w-full py-3 rounded-[var(--radius-md)] font-medium transition-opacity"
-            style={{ background: '#FEE500', color: '#191919', opacity: 0.6, cursor: 'not-allowed' }}
+            className="w-full py-3 rounded-md font-medium opacity-60 cursor-not-allowed"
+            style={{ background: '#FEE500', color: '#191919' }}
             disabled
             aria-label="카카오 로그인 (준비 중)"
           >
@@ -199,14 +176,14 @@ export function LoginScreen() {
           </button>
           <button
             type="button"
-            className="w-full py-3 rounded-[var(--radius-md)] font-medium transition-opacity"
-            style={{ background: '#fff', color: 'var(--color-text-primary)', border: '1.5px solid rgba(0,0,0,0.15)', opacity: 0.6, cursor: 'not-allowed' }}
+            className="w-full py-3 rounded-md font-medium opacity-60 cursor-not-allowed text-text-primary"
+            style={{ background: 'var(--color-surface-strong)', border: '1.5px solid rgba(0,0,0,0.15)' }}
             disabled
             aria-label="구글 로그인 (준비 중)"
           >
             구글로 로그인
           </button>
-          <p className="text-center text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
+          <p className="text-center text-xs mt-1 text-text-muted">
             소셜 로그인은 준비 중이에요 🔧
           </p>
         </div>
