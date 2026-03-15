@@ -29,8 +29,8 @@ function ReactionBadge({ userName }: { userName: string }) {
       {entries.map(([emoji, count]) => (
         <span
           key={emoji}
-          className="flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-medium"
-          style={{ background: 'rgba(0,0,0,0.07)', color: 'var(--color-text-secondary)' }}
+          className="flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-medium text-text-secondary"
+          style={{ background: 'rgba(0,0,0,0.07)' }}
         >
           {emoji} {count}
         </span>
@@ -54,9 +54,9 @@ function OneLinerInput() {
   };
 
   return (
-    <div className="glass-card flex flex-col gap-2" style={{ padding: '10px 16px' }}>
+    <div className="glass-card flex flex-col gap-2 px-md py-sm">
       <div className="flex items-center gap-3">
-        <span className="text-sm shrink-0" style={{ color: 'var(--color-text-muted)' }}>
+        <span className="text-sm shrink-0 text-text-muted">
           {userName}의 한마디
         </span>
         {isEditing ? (
@@ -68,25 +68,27 @@ function OneLinerInput() {
             onKeyDown={(e) => e.key === 'Enter' && handleBlur()}
             maxLength={40}
             autoFocus
-            className="flex-1 text-sm focus:outline-none bg-transparent"
-            style={{ color: 'var(--color-text-primary)', borderBottom: '1.5px solid rgba(0,0,0,0.2)' }}
+            className="flex-1 text-sm focus:outline-none bg-transparent text-text-primary"
+            style={{ borderBottom: '1.5px solid rgba(0,0,0,0.2)' }}
           />
         ) : (
           <button
             type="button"
             onClick={() => { setDraft(oneLiner); setIsEditing(true); }}
-            className="flex-1 text-left text-sm transition-all duration-150 hover:opacity-70 focus:outline-none"
-            style={{ color: 'var(--color-text-primary)' }}
+            className="flex-1 text-left text-sm transition-all duration-150 hover:opacity-70 focus:outline-none text-text-primary"
             title="클릭해서 편집"
           >
             {oneLiner}
           </button>
         )}
-        <span className="text-xs shrink-0" style={{ color: 'var(--color-text-muted)' }}>✏️</span>
+        <span className="text-xs shrink-0 text-text-muted">✏️</span>
       </div>
       {totalReactions > 0 && (
-        <div className="flex items-center gap-2 pt-3 mt-1" style={{ borderTop: '1px solid var(--color-border)' }}>
-          <span className="text-xs shrink-0" style={{ color: 'var(--color-text-muted)' }}>팀원 응원</span>
+        <div
+          className="flex items-center gap-2 pt-3 mt-1"
+          style={{ borderTop: '1px solid var(--color-border)' }}
+        >
+          <span className="text-xs shrink-0 text-text-muted">팀원 응원</span>
           <ReactionBadge userName={userName} />
         </div>
       )}
@@ -96,7 +98,6 @@ function OneLinerInput() {
 
 export function Dashboard() {
   return (
-    // 전체 컨테이너 — 뷰포트 높이 고정, 넘치면 숨김
     <div
       className="flex flex-col md:flex-row md:gap-4 px-4 py-4 gap-4"
       style={{
@@ -107,10 +108,10 @@ export function Dashboard() {
       {/* 왼쪽 — 내부 스크롤 */}
       <div
         className="flex-1 min-w-0 flex flex-col gap-4 overflow-y-auto pb-[124px] md:pb-4 px-4 -mx-4"
-        style={{ scrollbarWidth: 'none', paddingLeft: '1rem', paddingRight: '1rem' }}
+        style={{ scrollbarWidth: 'none' }}
       >
         {/* 날짜 */}
-        <p className="font-semibold shrink-0" style={{ fontSize: 15, color: 'var(--color-text-primary)' }}>
+        <p className="font-semibold shrink-0 text-sm text-text-primary">
           {getDateLabel()}
         </p>
 
@@ -129,15 +130,15 @@ export function Dashboard() {
         <div className="shrink-0">
           <EventPanel />
         </div>
+
+        {/* 모바일 타임라인 — 스크롤 영역 안에 포함 */}
+        <div className="md:hidden shrink-0">
+          <TimelinePanel />
+        </div>
       </div>
 
-      {/* 오른쪽 타임라인 — 고정 */}
+      {/* 오른쪽 타임라인 — 데스크탑만 */}
       <div className="hidden md:block md:w-[300px] md:shrink-0">
-        <TimelinePanel />
-      </div>
-
-      {/* 모바일 타임라인 — 왼쪽 스크롤 영역 밖으로 */}
-      <div className="md:hidden shrink-0">
         <TimelinePanel />
       </div>
     </div>
