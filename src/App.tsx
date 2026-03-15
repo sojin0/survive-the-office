@@ -56,7 +56,7 @@ function App() {
 
       {/* 퇴근하기 버튼 + 확인 모달 — 모바일 전용 */}
       {!isRetired && !isViewingDashboard && (
-        <div className="md:hidden fixed left-0 right-0 px-4 z-50" style={{ bottom: 68 }}>
+        <div className="md:hidden fixed left-0 right-0 flex justify-center px-4 z-50" style={{ bottom: 68 }}>
           <AnimatePresence>
             {showRetireConfirm && (
               <RetireConfirmModal
