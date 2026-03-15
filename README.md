@@ -98,6 +98,7 @@ AI가 일관된 코드를 생성할 수 있도록 [`CLAUDE.md`](./CLAUDE.md)에 
 | 상태 관리 | Zustand |
 | 애니메이션 | Framer Motion |
 | 배포 | Vercel |
+> 🔒 소셜 로그인은 현재 MVP 범위 외입니다. 이름과 팀 선택으로 간편하게 시작할 수 있어요.
 
 ---
 
