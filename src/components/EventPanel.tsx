@@ -1,10 +1,12 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { POSITIVE_EVENTS, NEGATIVE_EVENTS } from '../data/events';
 import { EventButton } from './EventButton';
+import { useAppStore } from '../store/useAppStore';
 import type { EventItem } from '../types';
 
 type Tab = 'positive' | 'negative';
 
+// 커스텀 이벤트 추가 폼
 function AddEventForm({
   tab,
   onAdd,
@@ -113,20 +115,11 @@ export function EventPanel() {
   const [tab, setTab] = useState<Tab>('positive');
   const [showAddForm, setShowAddForm] = useState(false);
   const [customEvents, setCustomEvents] = useState<EventItem[]>([]);
-  const formRef = useRef<HTMLDivElement>(null);
+  const isRetired = useAppStore((s) => s.isRetired);
 
   const baseEvents = tab === 'positive' ? POSITIVE_EVENTS : NEGATIVE_EVENTS;
   const custom = customEvents.filter((e) => e.eventType === tab);
   const events = [...baseEvents, ...custom];
-
-  // 폼이 열릴 때 스크롤해서 보이게
-  useEffect(() => {
-    if (showAddForm && formRef.current) {
-      setTimeout(() => {
-        formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }, 50);
-    }
-  }, [showAddForm]);
 
   const handleAdd = (e: EventItem) => {
     setCustomEvents((prev) => [...prev, e]);
@@ -135,6 +128,7 @@ export function EventPanel() {
 
   return (
     <section className="glass-card p-[var(--spacing-lg)]">
+
       {/* 탭 */}
       <div
         className="flex gap-1 p-1 mb-4 rounded-[var(--radius-md)]"
@@ -168,7 +162,9 @@ export function EventPanel() {
         {events.map((event) => (
           <EventButton key={event.id} event={event} />
         ))}
-        {!showAddForm && (
+
+        {/* + 버튼 — 퇴근 후 숨김 */}
+        {!showAddForm && !isRetired && (
           <button
             type="button"
             onClick={() => setShowAddForm(true)}
@@ -188,14 +184,13 @@ export function EventPanel() {
 
       {/* 추가 폼 */}
       {showAddForm && (
-        <div ref={formRef}>
-          <AddEventForm
-            tab={tab}
-            onAdd={handleAdd}
-            onCancel={() => setShowAddForm(false)}
-          />
-        </div>
+        <AddEventForm
+          tab={tab}
+          onAdd={handleAdd}
+          onCancel={() => setShowAddForm(false)}
+        />
       )}
+
     </section>
   );
 }
