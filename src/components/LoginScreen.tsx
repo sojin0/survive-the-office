@@ -41,7 +41,6 @@ export function LoginScreen() {
   const bhData = ORG.find((o) => o.본부 === selectedBH);
   const unitList = getUnitList(selectedBH);
   const showUnitSelect = !!bhData && unitList.length > 0;
-  const noUnitTeams = bhData?.유닛.filter((u) => u.유닛명 === null).flatMap((u) => u.팀) ?? [];
   const teamList = getTeamList(selectedBH, selectedUnit);
 
   const handleBHChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
