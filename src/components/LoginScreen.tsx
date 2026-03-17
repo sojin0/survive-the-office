@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../store/useAuthStore';
 import { ORG, getUnitList, getTeamList } from '../data/org';
 
@@ -25,7 +26,6 @@ type Mode = 'solo' | 'team';
 export function LoginScreen() {
   const login = useAuthStore((s) => s.login);
 
-  // URL 파라미터에서 팀 정보 읽기 + 파싱
   const params = new URLSearchParams(window.location.search);
   const teamFromUrl = params.get('team') ?? '';
 
@@ -76,10 +76,7 @@ export function LoginScreen() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    if (mode === 'solo') {
-      login(name.trim(), '');
-      return;
-    }
+    if (mode === 'solo') { login(name.trim(), ''); return; }
     const finalBH = isCustomBH ? customBH.trim() : selectedBH;
     if (!finalBH) return;
     if (!isCustomBH && !selectedTeam) return;
@@ -94,7 +91,6 @@ export function LoginScreen() {
     <div className="min-h-screen flex flex-col items-center justify-center p-6 weather-sunny">
       <div className="w-full max-w-sm">
 
-        {/* 타이틀 */}
         <div className="text-center mb-10">
           <h1 className="text-3xl font-bold text-text-primary">오늘 회사에서 살아남기</h1>
           <p className="text-sm mt-2 text-text-secondary">직장인 생존 대시보드</p>
@@ -102,152 +98,120 @@ export function LoginScreen() {
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
 
-          {/* 이름 */}
-          <label className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium text-text-primary">이름</span>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onFocus={() => setFocused('name')}
-              onBlur={() => setFocused(null)}
-              placeholder="이름을 입력하세요"
-              className="w-full px-4 py-3 rounded-md bg-white transition-all duration-150"
-              style={inputStyle(focused === 'name')}
-              required
-              autoComplete="name"
-            />
-          </label>
-
           {/* 모드 탭 */}
-          <div
-            className="flex gap-1 p-1 rounded-[var(--radius-md)]"
-            style={{ background: 'rgba(0,0,0,0.08)' }}
-          >
+          <div className="flex gap-1 p-1 rounded-[var(--radius-md)]" style={{ background: 'rgba(0,0,0,0.08)' }}>
             {(['solo', 'team'] as Mode[]).map((m) => {
               const isActive = mode === m;
               return (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => handleModeChange(m)}
+                <button key={m} type="button" onClick={() => handleModeChange(m)}
                   className="flex-1 py-2 rounded-[var(--radius-sm)] text-sm font-semibold transition-all duration-200 focus:outline-none"
                   style={{
                     background: isActive ? 'var(--color-btn-primary-bg)' : 'transparent',
                     color: isActive ? 'var(--color-btn-primary-text)' : 'var(--color-text-muted)',
                     boxShadow: isActive ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
                     transform: isActive ? 'scale(1)' : 'scale(0.97)',
-                  }}
-                >
+                  }}>
                   {m === 'solo' ? '⚔️ 혼자 생존하기' : '👥 팀과 함께'}
                 </button>
               );
             })}
           </div>
 
-          {/* 팀 선택 — team 모드일 때만 */}
-          {mode === 'team' && (
-            <>
-              {/* 본부 + 유닛 */}
-              <div className="flex flex-col gap-1.5">
-                <span className="text-sm font-medium text-text-primary">본부 · 유닛</span>
-                {!isCustomBH ? (
-                  <div className="flex gap-2">
-                    <select
-                      value={selectedBH}
-                      onChange={handleBHChange}
-                      onFocus={() => setFocused('bh')}
-                      onBlur={() => setFocused(null)}
-                      className="flex-1 px-3 py-3 rounded-md bg-white transition-all duration-150 appearance-none"
-                      style={selectStyle(focused === 'bh')}
-                    >
-                      <option value="" disabled>본부</option>
-                      {ORG.map((o) => (
-                        <option key={o.본부} value={o.본부}>{o.본부}</option>
-                      ))}
-                      <option value="__custom__">✏️ 직접 입력...</option>
-                    </select>
-                    <select
-                      value={selectedUnit}
-                      onChange={(e) => { setSelectedUnit(e.target.value); setSelectedTeam(''); }}
-                      onFocus={() => setFocused('unit')}
-                      onBlur={() => setFocused(null)}
-                      disabled={!showUnitSelect}
-                      className="flex-1 px-3 py-3 rounded-md bg-white transition-all duration-150 appearance-none"
-                      style={selectStyle(focused === 'unit', !showUnitSelect)}
-                    >
-                      <option value="" disabled>{!selectedBH ? '유닛' : !showUnitSelect ? '해당 없음' : '유닛'}</option>
-                      {unitList.map((u) => (
-                        <option key={u.유닛명!} value={u.유닛명!}>{u.유닛명}</option>
-                      ))}
-                    </select>
-                  </div>
-                ) : (
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={customBH}
-                      onChange={(e) => setCustomBH(e.target.value)}
-                      onFocus={() => setFocused('customBH')}
-                      onBlur={() => setFocused(null)}
-                      placeholder="본부명을 입력하세요"
-                      autoFocus
-                      className="flex-1 px-4 py-3 rounded-md bg-white transition-all duration-150"
-                      style={inputStyle(focused === 'customBH')}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => { setIsCustomBH(false); setSelectedBH(''); }}
-                      className="px-3 py-2 rounded-md text-sm transition-all text-text-secondary"
-                      style={{ background: 'rgba(0,0,0,0.07)' }}
-                    >
-                      취소
-                    </button>
-                  </div>
-                )}
-              </div>
+          {/* 입력 박스 */}
+          <div className="flex flex-col gap-4 p-4 rounded-xl" style={{ background: 'rgba(0,0,0,0.04)', border: '1px solid rgba(0,0,0,0.08)' }}>
 
-              {/* 팀 */}
-              {!isCustomBH && (
-                <label className="flex flex-col gap-1.5">
-                  <span className="text-sm font-medium text-text-primary" style={{ opacity: teamList.length > 0 ? 1 : 0.4 }}>팀</span>
-                  <select
-                    value={selectedTeam}
-                    onChange={(e) => setSelectedTeam(e.target.value)}
-                    onFocus={() => setFocused('team')}
-                    onBlur={() => setFocused(null)}
-                    disabled={teamList.length === 0}
-                    className="w-full px-4 py-3 rounded-md bg-white transition-all duration-150 appearance-none"
-                    style={selectStyle(focused === 'team', teamList.length === 0)}
-                  >
-                    <option value="" disabled>
-                      {!selectedBH ? '본부를 먼저 선택하세요' : showUnitSelect && !selectedUnit ? '유닛을 먼저 선택하세요' : '팀을 선택하세요'}
-                    </option>
-                    {teamList.map((t) => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
-                  </select>
-                </label>
+            {/* 팀 선택 — 애니메이션 */}
+            <AnimatePresence mode="wait">
+              {mode === 'team' && (
+                <motion.div
+                  key="team-fields"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.25, ease: 'easeInOut' }}
+                  style={{ overflow: 'hidden' }}
+                  className="flex flex-col gap-4"
+                >
+                  {/* 본부 + 유닛 */}
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-sm font-medium text-text-primary">본부 · 유닛</span>
+                    {!isCustomBH ? (
+                      <div className="flex gap-2">
+                        <select value={selectedBH} onChange={handleBHChange}
+                          onFocus={() => setFocused('bh')} onBlur={() => setFocused(null)}
+                          className="flex-1 px-3 py-3 rounded-md bg-white transition-all duration-150 appearance-none"
+                          style={selectStyle(focused === 'bh')}>
+                          <option value="" disabled>본부</option>
+                          {ORG.map((o) => <option key={o.본부} value={o.본부}>{o.본부}</option>)}
+                          <option value="__custom__">✏️ 직접 입력...</option>
+                        </select>
+                        <select value={selectedUnit}
+                          onChange={(e) => { setSelectedUnit(e.target.value); setSelectedTeam(''); }}
+                          onFocus={() => setFocused('unit')} onBlur={() => setFocused(null)}
+                          disabled={!showUnitSelect}
+                          className="flex-1 px-3 py-3 rounded-md bg-white transition-all duration-150 appearance-none"
+                          style={selectStyle(focused === 'unit', !showUnitSelect)}>
+                          <option value="" disabled>{!selectedBH ? '유닛' : !showUnitSelect ? '해당 없음' : '유닛'}</option>
+                          {unitList.map((u) => <option key={u.유닛명!} value={u.유닛명!}>{u.유닛명}</option>)}
+                        </select>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <input type="text" value={customBH} onChange={(e) => setCustomBH(e.target.value)}
+                          onFocus={() => setFocused('customBH')} onBlur={() => setFocused(null)}
+                          placeholder="본부명을 입력하세요" autoFocus
+                          className="flex-1 px-4 py-3 rounded-md bg-white transition-all duration-150"
+                          style={inputStyle(focused === 'customBH')} />
+                        <button type="button" onClick={() => { setIsCustomBH(false); setSelectedBH(''); }}
+                          className="px-3 py-2 rounded-md text-sm transition-all text-text-secondary"
+                          style={{ background: 'rgba(0,0,0,0.07)' }}>
+                          취소
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 팀 */}
+                  {!isCustomBH && (
+                    <label className="flex flex-col gap-1.5">
+                      <span className="text-sm font-medium text-text-primary" style={{ opacity: teamList.length > 0 ? 1 : 0.4 }}>팀</span>
+                      <select value={selectedTeam} onChange={(e) => setSelectedTeam(e.target.value)}
+                        onFocus={() => setFocused('team')} onBlur={() => setFocused(null)}
+                        disabled={teamList.length === 0}
+                        className="w-full px-4 py-3 rounded-md bg-white transition-all duration-150 appearance-none"
+                        style={selectStyle(focused === 'team', teamList.length === 0)}>
+                        <option value="" disabled>
+                          {!selectedBH ? '본부를 먼저 선택하세요' : showUnitSelect && !selectedUnit ? '유닛을 먼저 선택하세요' : '팀을 선택하세요'}
+                        </option>
+                        {teamList.map((t) => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </label>
+                  )}
+                </motion.div>
               )}
-            </>
-          )}
+            </AnimatePresence>
+
+            {/* 이름 — 항상 박스 안에 */}
+            <label className="flex flex-col gap-1.5">
+              <span className="text-sm font-medium text-text-primary">이름</span>
+              <input type="text" value={name} onChange={(e) => setName(e.target.value)}
+                onFocus={() => setFocused('name')} onBlur={() => setFocused(null)}
+                placeholder="이름을 입력하세요"
+                className="w-full px-4 py-3 rounded-md bg-white transition-all duration-150"
+                style={inputStyle(focused === 'name')}
+                required autoComplete="name" />
+            </label>
+
+          </div>
 
           {/* CTA */}
-          <button
-            type="submit"
-            disabled={!canSubmit}
+          <button type="submit" disabled={!canSubmit}
             className="w-full py-3.5 rounded-full font-bold text-base transition-all duration-150 hover:-translate-y-0.5 active:scale-[0.98] shadow-elevated disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0"
-            style={{
-              background: 'var(--color-btn-primary-bg)',
-              color: 'var(--color-btn-primary-text)',
-            }}
-          >
+            style={{ background: 'var(--color-btn-primary-bg)', color: 'var(--color-btn-primary-text)' }}>
             {mode === 'solo' ? '⚔️ 혼자 생존 시작!' : '👥 팀과 함께 생존 시작!'}
           </button>
+
         </form>
-
-
-
       </div>
     </div>
   );
