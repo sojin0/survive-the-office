@@ -38,9 +38,8 @@ export function LoginScreen() {
   const [selectedTeam, setSelectedTeam] = useState('');
   const [focused, setFocused] = useState<string | null>(null);
 
-  const bhData = ORG.find((o) => o.본부 === selectedBH);
   const unitList = getUnitList(selectedBH);
-  const showUnitSelect = !!bhData && unitList.length > 0;
+  const showUnitSelect = unitList.length > 0;
   const teamList = getTeamList(selectedBH, selectedUnit);
 
   const handleBHChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
