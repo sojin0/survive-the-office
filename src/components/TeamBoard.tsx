@@ -240,17 +240,27 @@ export function TeamBoard() {
         fetchReactionsForTeam(userTeam),
       ]);
 
-      if (data) {
-        setTeamMembers(data.map((row) => ({
-          id: row.id,
-          name: row.user_name,
-          role: row.user_name === userName ? '나' : undefined,
-          weatherState: (row.weather_state as WeatherState) ?? 'sunny',
-          hp: row.hp ?? 80,
-          oneLiner: row.one_liner ?? '오늘도 살아남는 중...',
-        })));
+      if (!data) return;
+
+      const members = data.map((row) => ({
+        id: row.id,
+        name: row.user_name,
+        role: row.user_name === userName ? '나' : undefined,
+        weatherState: (row.weather_state as WeatherState) ?? 'sunny',
+        hp: row.hp ?? 80,
+        oneLiner: row.one_liner ?? '오늘도 살아남는 중...',
+      }));
+      setTeamMembers(members);
+
+      // reactionData는 { [user_name]: { [emoji]: count } }
+      // TeamMemberCard는 member.id 기준으로 조회하므로 id로 키 변환
+      const reactionsById: Record<string, Record<string, number>> = {};
+      for (const member of members) {
+        if (reactionData[member.name]) {
+          reactionsById[member.id] = reactionData[member.name];
+        }
       }
-      setReactionsState(reactionData);
+      setReactionsState(reactionsById);
     };
 
     fetchAll();
