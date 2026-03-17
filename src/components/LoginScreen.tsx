@@ -25,17 +25,35 @@ type Mode = 'solo' | 'team';
 export function LoginScreen() {
   const login = useAuthStore((s) => s.login);
 
-  // URL 파라미터에서 팀 정보 읽기
+  // URL 파라미터에서 팀 정보 읽기 + 파싱
   const params = new URLSearchParams(window.location.search);
   const teamFromUrl = params.get('team') ?? '';
 
+  const parseTeamFromUrl = (teamStr: string) => {
+    if (!teamStr) return { bh: '', unit: '', team: '' };
+    for (const org of ORG) {
+      if (!teamStr.startsWith(org.본부)) continue;
+      const rest = teamStr.slice(org.본부.length).trim();
+      for (const u of org.유닛) {
+        if (u.유닛명 && rest.startsWith(u.유닛명)) {
+          const team = rest.slice(u.유닛명.length).trim();
+          return { bh: org.본부, unit: u.유닛명, team };
+        }
+      }
+      return { bh: org.본부, unit: '', team: rest };
+    }
+    return { bh: '', unit: '', team: '' };
+  };
+
+  const parsed = parseTeamFromUrl(teamFromUrl);
+
   const [mode, setMode] = useState<Mode>(teamFromUrl ? 'team' : 'solo');
   const [name, setName] = useState('');
-  const [selectedBH, setSelectedBH] = useState('');
-  const [isCustomBH, setIsCustomBH] = useState(() => !!teamFromUrl);
-  const [customBH, setCustomBH] = useState(() => teamFromUrl);
-  const [selectedUnit, setSelectedUnit] = useState('');
-  const [selectedTeam, setSelectedTeam] = useState('');
+  const [selectedBH, setSelectedBH] = useState(parsed.bh);
+  const [isCustomBH, setIsCustomBH] = useState(false);
+  const [customBH, setCustomBH] = useState('');
+  const [selectedUnit, setSelectedUnit] = useState(parsed.unit);
+  const [selectedTeam, setSelectedTeam] = useState(parsed.team);
   const [focused, setFocused] = useState<string | null>(null);
 
   const unitList = getUnitList(selectedBH);
