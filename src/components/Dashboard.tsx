@@ -208,10 +208,21 @@ function DDayWidget() {
 // ── 체크리스트 ──────────────────────────────────────────
 type CheckItem = { id: string; text: string; done: boolean };
 const CHECKLIST_KEY = 'checklist_v1';
+const CHECKLIST_DATE_KEY = 'checklist_date_v1';
 
 function loadChecklist(): CheckItem[] {
-  try { return JSON.parse(localStorage.getItem(CHECKLIST_KEY) ?? '') as CheckItem[]; }
-  catch { return []; }
+  try {
+    const savedDate = localStorage.getItem(CHECKLIST_DATE_KEY);
+    const today = new Date().toISOString().slice(0, 10);
+    if (savedDate !== today) {
+      localStorage.removeItem(CHECKLIST_KEY);
+      localStorage.setItem(CHECKLIST_DATE_KEY, today);
+      return [];
+    }
+    return JSON.parse(localStorage.getItem(CHECKLIST_KEY) ?? '') as CheckItem[];
+  } catch {
+    return [];
+  }
 }
 
 function Checklist() {
@@ -223,6 +234,7 @@ function Checklist() {
   const save = (updated: CheckItem[]) => {
     setItems(updated);
     localStorage.setItem(CHECKLIST_KEY, JSON.stringify(updated));
+    localStorage.setItem(CHECKLIST_DATE_KEY, new Date().toISOString().slice(0, 10));
   };
 
   const addItem = () => {
