@@ -27,8 +27,6 @@ function App() {
 
   const isLoggedIn = userName.length > 0;
   const isDarkWeather = weatherState === 'stormy' || weatherState === 'dead';
-
-  // 퇴근했지만 대시보드 보기 모드면 MainLayout 표시
   const showDashboard = !isRetired || isViewingDashboard;
 
   if (!isLoggedIn) {
@@ -41,24 +39,29 @@ function App() {
 
   return (
     <main className={`font-sans min-h-screen relative ${isDarkWeather ? 'weather-text-dark text-white' : 'text-[var(--color-text-primary)]'}`}>
-      {/* 날씨 배경 레이어 */}
-      {WEATHER_IDS.map((id) => (
-        <div
-          key={id}
-          className={`weather-bg-layer ${id}`}
-          style={{ opacity: weatherState === id ? 1 : 0 }}
-          aria-hidden
-        />
-      ))}
+
+      {/* 날씨 배경 — 헤더/네비 제외한 콘텐츠 영역에만 */}
+      <div className="weather-bg-wrap" aria-hidden>
+        {WEATHER_IDS.map((id) => (
+          <div
+            key={id}
+            className={`weather-bg-layer ${id}`}
+            style={{ opacity: weatherState === id ? 1 : 0 }}
+          />
+        ))}
+      </div>
 
       <div className="relative z-10">
         <AppHeader />
         {showDashboard ? <MainLayout /> : <SurvivalResult />}
       </div>
 
-      {/* 퇴근하기 버튼 — 모바일 전용, 결과 화면에서는 숨김 */}
+      {/* 퇴근하기 버튼 — 모바일 전용 */}
       {!isViewingDashboard && !isRetired && (
-        <div className="md:hidden fixed left-0 right-0 flex justify-center px-4 z-50" style={{ bottom: 68 }}>
+        <div
+          className="md:hidden fixed left-0 right-0 flex justify-center px-4 z-50"
+          style={{ bottom: `calc(var(--bottomnav-height) + 12px)` }}
+        >
           <AnimatePresence>
             {showRetireConfirm && (
               <RetireConfirmModal

@@ -6,7 +6,6 @@ import type { EventItem } from '../types';
 
 type Tab = 'positive' | 'negative';
 
-// 커스텀 이벤트 추가 폼
 function AddEventForm({
   tab,
   onAdd,
@@ -157,13 +156,12 @@ export function EventPanel() {
         })}
       </div>
 
-      {/* 이벤트 버튼 그리드 */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+      {/* 이벤트 버튼 그리드 — 2열 → 3열(sm) → 4열(lg) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
         {events.map((event) => (
           <EventButton key={event.id} event={event} />
         ))}
 
-        {/* + 버튼 — 퇴근 후 숨김 */}
         {!showAddForm && !isRetired && (
           <button
             type="button"
@@ -182,7 +180,6 @@ export function EventPanel() {
         )}
       </div>
 
-      {/* 추가 폼 */}
       {showAddForm && (
         <AddEventForm
           tab={tab}

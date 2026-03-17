@@ -2,9 +2,25 @@ import { create } from 'zustand';
 import type { EventLog, WeatherState, SurvivalGrade } from '../types';
 import { getWeatherState, getSurvivalGrade, clampHp } from '../utils/hp';
 import { getState, setState, saveDayToHistory } from '../utils/storage';
+import { supabase } from '../lib/supabase';
+import { getAuth } from '../utils/storage';
 
 function getToday(): string {
   return new Date().toISOString().slice(0, 10);
+}
+
+async function syncToSupabase(patch: {
+  hp?: number;
+  weather_state?: string;
+  one_liner?: string;
+}) {
+  const auth = getAuth();
+  if (!auth?.userName) return;
+  await supabase
+    .from('user_status')
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq('user_name', auth.userName)
+    .eq('team', auth.team ?? '');
 }
 
 type AppStore = {
@@ -58,6 +74,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       date: today, hp: newHp, minHp: newMin,
       eventLog: nextLog, weatherState, survivalGrade: get().survivalGrade ?? '',
     });
+    syncToSupabase({ hp: newHp, weather_state: weatherState, one_liner: autoOneLiner });
   },
 
   removeEvent(id) {
@@ -84,10 +101,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
       date: today, hp: newHp, minHp: newMin,
       eventLog: nextLog, weatherState, survivalGrade: get().survivalGrade ?? '',
     });
+    syncToSupabase({ hp: newHp, weather_state: weatherState });
   },
 
   setOneLiner(text) {
     set({ oneLiner: text });
+    syncToSupabase({ one_liner: text });
   },
 
   retire() {
@@ -121,6 +140,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       date: today, hp: INITIAL_HP, minHp: INITIAL_HP,
       eventLog: [], weatherState: 'sunny', survivalGrade: '',
     });
+    syncToSupabase({ hp: INITIAL_HP, weather_state: 'sunny', one_liner: INITIAL_ONE_LINER });
   },
 
   hydrate() {

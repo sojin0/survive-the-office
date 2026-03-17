@@ -10,11 +10,11 @@ export type TeamMember = {
 };
 
 export const MOCK_TEAM_MEMBERS: TeamMember[] = [
-  { id: 'member-1', name: '이주희', role: '팀장', weatherState: 'sunny',        hp: 92, oneLiner: '오늘도 파이팅! 🔥' },
-  { id: 'member-2', name: '이미애',               weatherState: 'cloudy_sunny', hp: 75, oneLiner: '커피 한 잔 하고 싶다' },
-  { id: 'member-3', name: '이민영',               weatherState: 'cloudy',       hp: 60, oneLiner: '집중 모드 돌입 중...' },
-  { id: 'member-4', name: '정현영',               weatherState: 'rainy',        hp: 40, oneLiner: '회의가 너무 많아요 😮‍💨' },
-  { id: 'member-5', name: '하소진',               weatherState: 'sunny',        hp: 88, oneLiner: '디자인 작업 중! ✏️' },
+  { id: 'member-1', name: '김메디', role: '팀장', weatherState: 'sunny',        hp: 92, oneLiner: '오늘도 파이팅! 🔥' },
+  { id: 'member-2', name: '이유비',               weatherState: 'cloudy_sunny', hp: 75, oneLiner: '커피 한 잔 하고 싶다 ☕' },
+  { id: 'member-3', name: '박케어',               weatherState: 'cloudy',       hp: 58, oneLiner: '집중 모드 돌입 중...' },
+  { id: 'member-4', name: '한사랑',               weatherState: 'rainy',        hp: 40, oneLiner: '회의가 너무 많아요 😮‍💨' },
+  { id: 'member-5', name: '하유팜',               weatherState: 'sunny',        hp: 85, oneLiner: '오늘 배포 성공 🚀' },
 ];
 
 const WEATHER_EMOJI: Record<WeatherState, string> = {

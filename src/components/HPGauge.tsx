@@ -15,13 +15,16 @@ function getHpBarGradient(weather: WeatherState): string {
   }
 }
 
-function getHpMessage(delta: number): string {
+function getHpMessage(delta: number, lastEventId?: string): string {
+  const isMission = lastEventId?.startsWith('mission');
   if (delta > 0) {
     if (delta >= 20) return `+${delta} 🎉 대박! 오늘 최고예요!`;
     if (delta >= 15) return `+${delta} 💪 좋아요! 이 기세!`;
     if (delta >= 10) return `+${delta} 😊 기분 좋은 순간!`;
+    if (isMission)   return `+${delta} 🎯 미션 클리어!`;
     return `+${delta} ☕ 소소한 행복!`;
   } else {
+    if (isMission)     return `${delta} 🎯 미션 취소`;
     if (delta <= -20) return `${delta} 😱 많이 힘드셨죠...`;
     if (delta <= -15) return `${delta} 😤 버텨요, 잘하고 있어요!`;
     if (delta <= -10) return `${delta} 😮‍💨 괜찮아요, 지나갈 거예요`;
@@ -47,6 +50,7 @@ function getHpStatusText(hp: number): { label: string; emoji: string } {
 export function HPGauge() {
   const hp = useAppStore((s) => s.hp);
   const weatherState = useAppStore((s) => s.weatherState);
+  const eventLog = useAppStore((s) => s.eventLog);
   const isCritical = hp <= 20 && hp > 0;
 
   const prevHpRef = useRef(hp);
@@ -56,7 +60,8 @@ export function HPGauge() {
   useEffect(() => {
     const delta = hp - prevHpRef.current;
     if (delta !== 0) {
-      setToast(getHpMessage(delta));
+      const lastEventId = eventLog[0]?.eventId;
+      setToast(getHpMessage(delta, lastEventId));
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => setToast(null), 2200);
     }
@@ -73,7 +78,6 @@ export function HPGauge() {
       data-testid="hp-gauge"
       aria-label="현재 HP 게이지"
     >
-      {/* HP 수치 + 상태 뱃지 */}
       <div className="flex items-center justify-between gap-2 mb-2">
         <span className="text-sm font-medium text-text-secondary">HP</span>
         <div className="flex items-center gap-1.5">
@@ -89,7 +93,6 @@ export function HPGauge() {
         </div>
       </div>
 
-      {/* 토스트 / 고정 메시지 / 위기 메시지 */}
       <div className="relative h-6 mb-2">
         <AnimatePresence>
           {toast && !fixedMessage && (
@@ -113,7 +116,6 @@ export function HPGauge() {
         )}
       </div>
 
-      {/* HP 바 */}
       <div
         className="h-3 rounded-full overflow-hidden bg-hp-bg"
         role="progressbar" aria-valuenow={hp} aria-valuemin={0} aria-valuemax={100}
@@ -125,12 +127,10 @@ export function HPGauge() {
           animate={{ width: `${hp}%` }}
           transition={{ type: 'easeOut', duration: 0.4 }}
         >
-          {/* 하이라이트 — 디자인 의도상 고정 그라데이션 */}
           <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.3) 0%, transparent 70%)' }} />
         </motion.div>
       </div>
 
-      {/* HP 범위 힌트 */}
       <div className="flex justify-between mt-1">
         <span className="text-[10px] text-text-muted">0</span>
         <span className="text-[10px] text-text-muted">50</span>

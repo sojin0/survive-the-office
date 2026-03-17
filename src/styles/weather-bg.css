@@ -1,8 +1,6 @@
-/* 날씨별 전체 배경 그라데이션 - 1s 전환 */
 .weather-bg-layer {
-  position: fixed;
+  position: absolute;
   inset: 0;
-  z-index: 0;
   transition: opacity 1s ease;
   pointer-events: none;
 }
@@ -43,7 +41,6 @@
   color: rgba(255, 255, 255, 0.5);
 }
 
-/* 카드/패널 내부는 기존 텍스트 색 유지 */
 .weather-text-dark [class*="shadow-card"],
 .weather-text-dark [class*="bg-white"] {
   color: var(--color-text-primary);

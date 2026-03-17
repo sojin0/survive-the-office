@@ -92,7 +92,7 @@ export function TimelinePanel() {
 
   return (
     <aside
-      className="w-full md:w-[300px] md:shrink-0 glass-card flex flex-col"
+      className="w-full md:shrink-0 glass-card flex flex-col"
       style={isMobile ? {} : {
         position: 'sticky',
         top: 'var(--header-height)',
@@ -128,7 +128,6 @@ export function TimelinePanel() {
           </div>
         ) : (
           <>
-            {/* 이벤트 목록 */}
             <div ref={eventListRef} className="relative" style={{ padding: '8px 8px 0 0' }}>
               {eventLog.length > 0 && (
                 <div className="pointer-events-none" style={{ position: 'absolute', top: 0, bottom: 0, left: 52, width: 2, background: 'var(--color-timeline-line)' }} aria-hidden />
@@ -166,7 +165,6 @@ export function TimelinePanel() {
               </AnimatePresence>
             </div>
 
-            {/* 팀원 응원 */}
             {reactionEntries.length > 0 && (
               <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}
                 style={{ marginTop: 8, paddingTop: 12, paddingLeft: 8, paddingBottom: 8, borderTop: '1px solid var(--color-border)' }}>
@@ -185,7 +183,7 @@ export function TimelinePanel() {
         )}
       </div>
 
-      {/* 퇴근하기 버튼 — 데스크탑만, 퇴근 후에도 비활성화 상태로 표시 */}
+      {/* 퇴근하기 버튼 */}
       <div className="hidden md:block shrink-0">
         <AnimatePresence>
           {showRetireConfirm && (

@@ -13,9 +13,9 @@ export function MainLayout() {
   return (
     <>
       <div
-        className={`weather-${weatherState} pb-[124px] md:pb-0`}
+        className={`weather-${weatherState}`}
         style={{
-          minHeight: 'calc(100vh - var(--header-height) - var(--bottomnav-height))',
+          height: 'calc(100vh - var(--header-height) - var(--bottomnav-height))',
           transition: 'background var(--transition-bg)',
         }}
       >
