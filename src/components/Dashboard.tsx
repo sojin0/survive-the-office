@@ -1,329 +1,442 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { getWeatherEmoji, getWeatherLabel } from '../data/team';
+import type { WeatherState } from '../types';
 import { useAppStore } from '../store/useAppStore';
 import { useAuthStore } from '../store/useAuthStore';
-import { WeatherCard } from './WeatherCard';
-import { HPGauge } from './HPGauge';
-import { EventPanel } from './EventPanel';
-import { TimelinePanel } from './TimelinePanel';
-import { fetchReactionsForUser } from '../utils/reactions';
 import { supabase } from '../lib/supabase';
+import { ORG, getUnitList, getTeamList } from '../data/org';
+import { fetchReactionsForTeam, sendReaction } from '../utils/reactions';
 
-function getDateLabel(): string {
-  const d = new Date();
-  const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
-  return `${d.getMonth() + 1}월 ${d.getDate()}일 (${weekdays[d.getDay()]})`;
+const REACTION_EMOJIS = [
+  { emoji: '👏', tooltip: '응원의 박수!!!', bg: 'rgba(255, 214, 0, 0.15)' },
+  { emoji: '☕', tooltip: '커피 한 잔 어때요?', bg: 'rgba(161, 102, 47, 0.12)' },
+  { emoji: '🍩', tooltip: '간식 먹어요!', bg: 'rgba(255, 100, 130, 0.12)' },
+] as const;
+
+type TeamMember = {
+  id: string;
+  name: string;
+  role?: string;
+  weatherState: WeatherState;
+  hp: number;
+  oneLiner: string;
+};
+
+function getTeamAverageWeather(members: { weatherState: WeatherState }[]): WeatherState {
+  const order: WeatherState[] = ['sunny', 'cloudy_sunny', 'cloudy', 'rainy', 'stormy', 'dead'];
+  const sum = members.reduce((acc, m) => acc + order.indexOf(m.weatherState), 0);
+  const avg = Math.round(sum / members.length);
+  return order[Math.min(avg, order.length - 1)];
 }
 
-function useMyReactions(userName: string, team: string) {
-  const [reactions, setReactions] = useState<Record<string, number>>({});
+const selectStyle = (focused: boolean, disabled = false): React.CSSProperties => ({
+  outline: 'none',
+  color: disabled ? 'var(--color-text-muted)' : 'var(--color-text-primary)',
+  border: focused ? '2px solid var(--color-primary)' : '1.5px solid rgba(0,0,0,0.15)',
+  boxShadow: focused ? '0 0 0 4px rgba(26,26,26,0.08)' : 'var(--shadow-card)',
+  paddingRight: '2.5rem',
+  opacity: disabled ? 0.4 : 1,
+  cursor: disabled ? 'not-allowed' : 'pointer',
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+  backgroundRepeat: 'no-repeat',
+  backgroundPosition: 'right 12px center',
+});
 
+function InviteModal({ onClose }: { onClose: () => void }) {
+  const login = useAuthStore((s) => s.login);
+  const userName = useAuthStore((s) => s.userName);
+
+  const [selectedBH, setSelectedBH] = useState('');
+  const [selectedUnit, setSelectedUnit] = useState('');
+  const [selectedTeam, setSelectedTeam] = useState('');
+  const [focused, setFocused] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [joined, setJoined] = useState(false);
+
+  const unitList = getUnitList(selectedBH);
+  const showUnitSelect = unitList.length > 0;
+  const teamList = getTeamList(selectedBH, selectedUnit);
+
+  const getTeamString = () =>
+    [selectedBH, selectedUnit, selectedTeam].filter(Boolean).join(' ');
+
+  const handleBHChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedBH(e.target.value);
+    setSelectedUnit('');
+    setSelectedTeam('');
+  };
+
+  const handleCopy = () => {
+    if (!selectedTeam) return;
+    const url = `${window.location.origin}?team=${encodeURIComponent(getTeamString())}`;
+    navigator.clipboard.writeText(url).catch(() => {});
+    setCopied(true);
+  };
+
+  const handleJoin = () => {
+    login(userName, getTeamString());
+    setJoined(true);
+    setTimeout(() => onClose(), 800);
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95, y: 8 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95, y: 8 }}
+      transition={{ duration: 0.2 }}
+      className="w-[360px] glass-card p-6 flex flex-col gap-4"
+    >
+      <div className="flex items-center justify-between">
+        <h3 className="text-base font-bold text-text-primary">팀 초대 링크 만들기</h3>
+        <button type="button" onClick={onClose} className="text-text-muted hover:opacity-70 text-lg">×</button>
+      </div>
+      <p className="text-sm text-text-secondary">어느 팀으로 초대할까요?</p>
+
+      <div className="flex flex-col gap-1.5">
+        <span className="text-sm font-medium text-text-primary">본부 · 유닛</span>
+        <div className="flex gap-2 min-w-0">
+          <select
+            value={selectedBH}
+            onChange={handleBHChange}
+            onFocus={() => setFocused('bh')}
+            onBlur={() => setFocused(null)}
+            className="flex-1 min-w-0 px-3 py-3 rounded-md bg-white transition-all duration-150 appearance-none truncate"
+            style={selectStyle(focused === 'bh')}
+          >
+            <option value="" disabled>본부</option>
+            {ORG.map((o) => <option key={o.본부} value={o.본부}>{o.본부}</option>)}
+          </select>
+          <select
+            value={selectedUnit}
+            onChange={(e) => { setSelectedUnit(e.target.value); setSelectedTeam(''); }}
+            onFocus={() => setFocused('unit')}
+            onBlur={() => setFocused(null)}
+            disabled={!showUnitSelect || !selectedBH}
+            className="flex-1 min-w-0 px-3 py-3 rounded-md bg-white transition-all duration-150 appearance-none truncate"
+            style={selectStyle(focused === 'unit', !showUnitSelect || !selectedBH)}
+          >
+            <option value="" disabled>{!selectedBH ? '유닛' : !showUnitSelect ? '해당 없음' : '유닛'}</option>
+            {unitList.map((u) => <option key={u.유닛명!} value={u.유닛명!}>{u.유닛명}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <label className="flex flex-col gap-1.5">
+        <span className="text-sm font-medium text-text-primary" style={{ opacity: teamList.length > 0 ? 1 : 0.4 }}>팀</span>
+        <select
+          value={selectedTeam}
+          onChange={(e) => setSelectedTeam(e.target.value)}
+          onFocus={() => setFocused('team')}
+          onBlur={() => setFocused(null)}
+          disabled={teamList.length === 0}
+          className="w-full px-4 py-3 rounded-md bg-white transition-all duration-150 appearance-none"
+          style={selectStyle(focused === 'team', teamList.length === 0)}
+        >
+          <option value="" disabled>
+            {!selectedBH ? '본부를 먼저 선택하세요' : showUnitSelect && !selectedUnit ? '유닛을 먼저 선택하세요' : '팀을 선택하세요'}
+          </option>
+          {teamList.map((t) => <option key={t} value={t}>{t}</option>)}
+        </select>
+      </label>
+
+      <button
+        type="button"
+        onClick={handleCopy}
+        disabled={!selectedTeam}
+        className="w-full py-3 rounded-full font-bold text-sm transition-all duration-150 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+        style={{ background: 'var(--color-btn-primary-bg)', color: 'var(--color-btn-primary-text)' }}
+      >
+        {copied ? '✅ 링크 복사됨!' : '🔗 초대 링크 복사하기'}
+      </button>
+
+      <AnimatePresence>
+        {copied && !joined && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }}
+            className="flex flex-col gap-2"
+          >
+            <p className="text-xs text-center text-text-muted">나도 이 팀으로 합류할까요?</p>
+            <div className="flex gap-2">
+              <button type="button" onClick={handleJoin}
+                className="flex-1 py-2.5 rounded-full font-bold text-sm transition-all active:scale-[0.98]"
+                style={{ background: 'var(--color-btn-primary-bg)', color: 'var(--color-btn-primary-text)' }}>
+                👥 합류하기
+              </button>
+              <button type="button" onClick={onClose}
+                className="flex-1 py-2.5 rounded-full text-sm transition-all active:scale-[0.98] text-text-secondary"
+                style={{ background: 'rgba(0,0,0,0.06)' }}>
+                나중에
+              </button>
+            </div>
+          </motion.div>
+        )}
+        {joined && (
+          <motion.p
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            className="text-sm text-center font-medium text-text-primary"
+          >
+            🎉 팀에 합류했어요!
+          </motion.p>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+function SoloEmptyState() {
+  const [showModal, setShowModal] = useState(false);
+
+  return (
+    <div className="flex flex-col items-center justify-center gap-6 px-6"
+      style={{ minHeight: 'calc(100vh - var(--header-height) - var(--bottomnav-height) - 48px)' }}>
+      <div className="text-6xl">🏝️</div>
+      <div className="text-center flex flex-col gap-2">
+        <h2 className="text-xl font-bold text-text-primary">혼자 생존 중이에요</h2>
+        <p className="text-sm text-text-secondary leading-relaxed">
+          팀원을 초대하면 서로의 생존 현황을 공유하고<br />응원을 주고받을 수 있어요!
+        </p>
+      </div>
+      <button type="button" onClick={() => setShowModal(true)}
+        className="px-6 py-3 rounded-full text-sm font-bold transition-all duration-150 hover:-translate-y-0.5 active:scale-[0.98] shadow-elevated"
+        style={{ background: 'var(--color-btn-primary-bg)', color: 'var(--color-btn-primary-text)' }}>
+        팀원 초대하기 🔗
+      </button>
+
+      <AnimatePresence>
+        {showModal && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ background: 'rgba(0,0,0,0.4)' }}
+            onClick={(e) => e.target === e.currentTarget && setShowModal(false)}
+          >
+            <InviteModal onClose={() => setShowModal(false)} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+export function TeamBoard() {
+  const [reactions, setReactionsState] = useState<Record<string, Record<string, number>>>({});
+  const [showToast, setShowToast] = useState(false);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const myOneLiner = useAppStore((s) => s.oneLiner);
+  const myHp = useAppStore((s) => s.hp);
+  const myWeather = useAppStore((s) => s.weatherState);
+  const userName = useAuthStore((s) => s.userName);
+  const userTeam = useAuthStore((s) => s.team);
+
+  // 팀원 + 응원 불러오기
   useEffect(() => {
-    if (!userName || !team) return;
+    if (!userTeam) return;
 
-    fetchReactionsForUser(userName, team).then(setReactions);
+    const fetchAll = async () => {
+      const [{ data }, reactionData] = await Promise.all([
+        supabase.from('user_status').select('*').eq('team', userTeam).order('updated_at', { ascending: false }),
+        fetchReactionsForTeam(userTeam),
+      ]);
 
-    // 실시간 구독
-    const channel = supabase
-      .channel('my_reactions')
-      .on('postgres_changes', {
-        event: 'INSERT', schema: 'public', table: 'reactions',
-        filter: `to_user=eq.${userName}`,
-      }, () => fetchReactionsForUser(userName, team).then(setReactions))
+      if (!data) return;
+
+      const members = data.map((row) => ({
+        id: row.id,
+        name: row.user_name,
+        role: row.user_name === userName ? '나' : undefined,
+        weatherState: (row.weather_state as WeatherState) ?? 'sunny',
+        hp: row.hp ?? 80,
+        oneLiner: row.one_liner ?? '오늘도 살아남는 중...',
+      }));
+      setTeamMembers(members);
+
+      // reactionData는 { [user_name]: { [emoji]: count } }
+      // TeamMemberCard는 member.id 기준으로 조회하므로 id로 키 변환
+      const reactionsById: Record<string, Record<string, number>> = {};
+      for (const member of members) {
+        if (reactionData[member.name]) {
+          reactionsById[member.id] = reactionData[member.name];
+        }
+      }
+      setReactionsState(reactionsById);
+    };
+
+    fetchAll();
+
+    // 팀원 상태 실시간 구독
+    const statusChannel = supabase
+      .channel('team_status')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_status', filter: `team=eq.${userTeam}` },
+        () => fetchAll())
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
-  }, [userName, team]);
+    // 응원 실시간 구독
+    const reactionChannel = supabase
+      .channel('team_reactions')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'reactions', filter: `team=eq.${userTeam}` },
+        () => fetchReactionsForTeam(userTeam).then(setReactionsState))
+      .subscribe();
 
-  return reactions;
-}
+    return () => {
+      supabase.removeChannel(statusChannel);
+      supabase.removeChannel(reactionChannel);
+    };
+  }, [userTeam, userName]);
 
-function ReactionBadge({ userName, team }: { userName: string; team: string }) {
-  const reactions = useMyReactions(userName, team);
-  const entries = Object.entries(reactions).filter(([, count]) => count > 0);
-  if (entries.length === 0) return null;
-  return (
-    <div className="flex items-center gap-1.5 flex-wrap">
-      {entries.map(([emoji, count]) => (
-        <span key={emoji} className="flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-medium text-text-secondary" style={{ background: 'rgba(0,0,0,0.07)' }}>
-          {emoji} {count}
-        </span>
-      ))}
-    </div>
+  const mergedMembers = useMemo(() =>
+    teamMembers.map((m) =>
+      m.name === userName
+        ? { ...m, hp: myHp, weatherState: myWeather, oneLiner: myOneLiner }
+        : m
+    ), [teamMembers, userName, myHp, myWeather, myOneLiner]);
+
+  const teamWeather = useMemo(() =>
+    mergedMembers.length > 0 ? getTeamAverageWeather(mergedMembers) : 'sunny',
+    [mergedMembers]
   );
-}
 
-function OneLinerInput() {
-  const oneLiner = useAppStore((s) => s.oneLiner);
-  const setOneLiner = useAppStore((s) => s.setOneLiner);
-  const userName = useAuthStore((s) => s.userName);
-  const team = useAuthStore((s) => s.team);
-  const [isEditing, setIsEditing] = useState(false);
-  const [draft, setDraft] = useState(oneLiner);
-  const reactions = useMyReactions(userName, team);
-  const totalReactions = Object.values(reactions).reduce((a, b) => a + b, 0);
+  const setReaction = useCallback(async (toUserId: string, emoji: string) => {
+    // toUserId는 Supabase row id — user_name으로 변환
+    const toUserName = teamMembers.find((m) => m.id === toUserId)?.name;
+    if (!toUserName) return;
+    await sendReaction(userName, toUserName, userTeam, emoji);
+    // 낙관적 업데이트
+    setReactionsState((prev) => ({
+      ...prev,
+      [toUserId]: {
+        ...(prev[toUserId] ?? {}),
+        [emoji]: (prev[toUserId]?.[emoji] ?? 0) + 1,
+      },
+    }));
+  }, [userName, userTeam, teamMembers]);
 
-  const handleBlur = () => {
-    setIsEditing(false);
-    setOneLiner(draft.trim() || oneLiner);
-  };
+  const handleInviteClick = useCallback(() => {
+    const url = `${window.location.origin}?team=${encodeURIComponent(userTeam)}`;
+    navigator.clipboard.writeText(url).catch(() => {});
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 2500);
+  }, [userTeam]);
+
+  if (!userTeam) return <SoloEmptyState />;
 
   return (
-    <div className="glass-card flex flex-col gap-2 px-md py-sm">
-      <div className="flex items-center gap-3">
-        <span className="text-sm shrink-0 text-text-muted">{userName}의 한마디</span>
-        {isEditing ? (
-          <input type="text" value={draft} onChange={(e) => setDraft(e.target.value)}
-            onBlur={handleBlur} onKeyDown={(e) => e.key === 'Enter' && handleBlur()}
-            maxLength={40} autoFocus
-            className="flex-1 text-sm focus:outline-none bg-transparent text-text-primary"
-            style={{ borderBottom: '1.5px solid rgba(0,0,0,0.2)' }} />
-        ) : (
-          <button type="button" onClick={() => { setDraft(oneLiner); setIsEditing(true); }}
-            className="flex-1 text-left text-sm transition-all duration-150 hover:opacity-70 focus:outline-none text-text-primary" title="클릭해서 편집">
-            {oneLiner}
-          </button>
-        )}
-        <span className="text-xs shrink-0 text-text-muted">✏️</span>
-      </div>
-      {totalReactions > 0 && (
-        <div className="flex items-center gap-2 pt-3 mt-1" style={{ borderTop: '1px solid var(--color-border)' }}>
-          <span className="text-xs shrink-0 text-text-muted">팀원 응원</span>
-          <ReactionBadge userName={userName} team={team} />
+    <div className="flex flex-col gap-4 p-4 pb-24 relative">
+      <header className="flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-bold text-text-primary">팀 공유 보드</h2>
+          <p className="text-sm mt-0.5 text-text-secondary">
+            오늘 팀 전체 날씨: {getWeatherEmoji(teamWeather)} {getWeatherLabel(teamWeather)}
+          </p>
         </div>
-      )}
-    </div>
-  );
-}
-
-// ── 디데이 카운터 ──────────────────────────────────────
-const DEFAULT_DDAYS = [
-  { id: 'kimes', label: '😎 KIMES 2026 오픈', date: '2026-03-19' },
-  { id: 'vacation', label: '🏖️ 전사 휴가', date: '2026-05-04' },
-];
-
-type DDay = { id: string; label: string; date: string };
-
-function calcDDay(dateStr: string): string {
-  if (!dateStr) return '날짜 미설정';
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const target = new Date(dateStr); target.setHours(0, 0, 0, 0);
-  const diff = Math.round((target.getTime() - today.getTime()) / 86400000);
-  if (diff === 0) return 'D-Day!';
-  if (diff > 0) return `D-${diff}`;
-  return `D+${Math.abs(diff)}`;
-}
-
-function DDayWidget() {
-  const STORAGE_KEY = 'ddays_v1';
-  const [ddays, setDdays] = useState<DDay[]>(() => {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '') as DDay[]; }
-    catch { return DEFAULT_DDAYS; }
-  });
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [newLabel, setNewLabel] = useState('');
-  const [showAddForm, setShowAddForm] = useState(false);
-
-  const save = (updated: DDay[]) => {
-    setDdays(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  };
-
-  const updateDate = (id: string, date: string) =>
-    save(ddays.map((d) => d.id === id ? { ...d, date } : d));
-
-  const updateLabel = (id: string, label: string) =>
-    save(ddays.map((d) => d.id === id ? { ...d, label } : d));
-
-  const addDDay = () => {
-    if (!newLabel.trim()) return;
-    save([...ddays, { id: `custom-${Date.now()}`, label: newLabel.trim(), date: '' }]);
-    setNewLabel('');
-    setShowAddForm(false);
-  };
-
-  const removeDDay = (id: string) => save(ddays.filter((d) => d.id !== id));
-
-  return (
-    <div className="glass-card p-4 flex flex-col gap-3 md:h-full">
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-text-primary">⚔️ 카운트다운</span>
-        <button type="button" onClick={() => setShowAddForm((v) => !v)}
-          className="text-xs px-2.5 py-1 rounded-full transition-all text-text-muted"
-          style={{ background: 'rgba(0,0,0,0.07)' }}>
-          {showAddForm ? '취소' : '+ 추가'}
+        <button type="button" onClick={handleInviteClick}
+          className="shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all duration-150 hover:-translate-y-0.5 focus:outline-none shadow-card"
+          style={{ background: 'var(--color-btn-primary-bg)', color: 'var(--color-btn-primary-text)' }}>
+          팀원 초대하기 🔗
         </button>
-      </div>
+      </header>
 
-      {showAddForm && (
-        <div className="flex gap-2">
-          <input type="text" value={newLabel} onChange={(e) => setNewLabel(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && addDDay()}
-            placeholder="예) 🎯 스프린트 마감" autoFocus
-            className="flex-1 px-3 py-1.5 rounded-md text-sm focus:outline-none"
-            style={{ background: 'var(--color-surface-strong)', border: '1px solid rgba(0,0,0,0.12)', color: 'var(--color-text-primary)' }} />
-          <button type="button" onClick={addDDay}
-            className="px-3 py-1.5 rounded-md text-sm font-medium"
-            style={{ background: 'var(--color-btn-primary-bg)', color: 'var(--color-btn-primary-text)' }}>
-            추가
-          </button>
-        </div>
-      )}
+      <AnimatePresence>
+        {showToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="fixed bottom-24 left-4 right-4 z-50 mx-auto max-w-sm py-3 px-4 rounded-md text-center text-sm shadow-elevated"
+            style={{ background: '#1A1A1A', color: '#fff' }}
+            role="status" aria-live="polite">
+            초대 링크가 복사됐어요! 팀원에게 공유해보세요 🔗
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-        {ddays.map((d) => {
-          const dtext = calcDDay(d.date);
-          const isPast = d.date && dtext.startsWith('D+');
-          return (
-            <div key={d.id} className="flex flex-col gap-1.5 p-3 rounded-[var(--radius-md)] relative group"
-              style={{ background: 'rgba(0,0,0,0.04)', border: '1px solid rgba(0,0,0,0.08)' }}>
-              <button type="button" onClick={() => removeDDay(d.id)}
-                className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full items-center justify-center text-xs opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity hidden group-hover:flex"
-                style={{ background: 'rgba(0,0,0,0.12)', color: 'var(--color-text-muted)' }}>×</button>
-              {editingId === d.id ? (
-                <input type="text" defaultValue={d.label} autoFocus
-                  onBlur={(e) => { updateLabel(d.id, e.target.value); setEditingId(null); }}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { updateLabel(d.id, e.currentTarget.value); setEditingId(null); } }}
-                  className="text-xs font-medium focus:outline-none bg-transparent text-text-primary"
-                  style={{ borderBottom: '1px solid rgba(0,0,0,0.2)' }} />
-              ) : (
-                <button type="button" onClick={() => setEditingId(d.id)}
-                  className="text-xs font-medium text-left truncate text-text-secondary hover:opacity-70">
-                  {d.label}
-                </button>
-              )}
-              <span className="text-lg font-bold tabular-nums" style={{ color: isPast ? 'var(--color-text-muted)' : 'var(--color-text-primary)' }}>
-                {dtext}
-              </span>
-              <input type="date" value={d.date} onChange={(e) => updateDate(d.id, e.target.value)}
-                className="text-xs focus:outline-none bg-transparent cursor-pointer text-text-muted"
-                style={{ colorScheme: 'light' }} />
-            </div>
-          );
-        })}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        {mergedMembers.length === 0 ? (
+          <p className="text-sm text-text-muted col-span-full text-center py-8">팀원 데이터를 불러오는 중... 👀</p>
+        ) : (
+          mergedMembers.map((member) => (
+            <TeamMemberCard
+              key={member.id}
+              member={member}
+              reactionCounts={reactions[member.id] ?? {}}
+              onReaction={(emoji) => setReaction(member.id, emoji)}
+            />
+          ))
+        )}
       </div>
     </div>
   );
 }
 
-// ── 체크리스트 ──────────────────────────────────────────
-type CheckItem = { id: string; text: string; done: boolean };
-const CHECKLIST_KEY = 'checklist_v1';
+type TeamMemberCardProps = {
+  member: TeamMember;
+  reactionCounts: Record<string, number>;
+  onReaction: (emoji: string) => void;
+};
 
-function loadChecklist(): CheckItem[] {
-  try { return JSON.parse(localStorage.getItem(CHECKLIST_KEY) ?? '') as CheckItem[]; }
-  catch { return []; }
-}
-
-function Checklist() {
-  const [items, setItems] = useState<CheckItem[]>(loadChecklist);
-  const [input, setInput] = useState('');
-  const addEvent = useAppStore((s) => s.addEvent);
-  const isRetired = useAppStore((s) => s.isRetired);
-
-  const save = (updated: CheckItem[]) => {
-    setItems(updated);
-    localStorage.setItem(CHECKLIST_KEY, JSON.stringify(updated));
-  };
-
-  const addItem = () => {
-    if (!input.trim()) return;
-    save([...items, { id: `c-${Date.now()}`, text: input.trim(), done: false }]);
-    setInput('');
-  };
-
-  const toggle = (id: string) => {
-    const item = items.find((i) => i.id === id);
-    if (!item) return;
-    const nowDone = !item.done;
-    save(items.map((i) => i.id === id ? { ...i, done: nowDone } : i));
-    if (nowDone && !isRetired) {
-      const now = new Date();
-      const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-      addEvent({ eventId: `mission-${id}`, name: `✅ ${item.text}`, emoji: '🎯', hpDelta: 3, timestamp });
-    }
-  };
-
-  const remove = (id: string) => save(items.filter((i) => i.id !== id));
-
-  const doneCount = items.filter((i) => i.done).length;
+function TeamMemberCard({ member, reactionCounts, onReaction }: TeamMemberCardProps) {
+  const [hoveredEmoji, setHoveredEmoji] = useState<string | null>(null);
+  const emoji = getWeatherEmoji(member.weatherState);
+  const label = getWeatherLabel(member.weatherState);
 
   return (
-    <div className="glass-card p-4 flex flex-col gap-3 md:h-full">
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-text-primary">🎯 오늘의 미션</span>
-        {items.length > 0 && (
-          <span className="text-xs text-text-muted">{doneCount}/{items.length}</span>
-        )}
+    <motion.article
+      initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+      className="glass-card flex flex-col gap-3 p-5">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <p className="font-bold text-text-primary">{member.name}</p>
+          {member.role && (
+            <span className="text-xs px-2 py-0.5 rounded-full text-text-secondary" style={{ background: 'rgba(0,0,0,0.07)' }}>
+              {member.role}
+            </span>
+          )}
+        </div>
+        <span className="text-2xl shrink-0" role="img" aria-label={label}>{emoji}</span>
       </div>
+
+      <div className="flex items-center gap-3">
+        <span className="text-xs shrink-0 text-text-muted">HP</span>
+        <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(0,0,0,0.08)' }}>
+          <motion.div className="h-full rounded-full"
+            animate={{ width: `${member.hp}%` }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+            style={{ background: member.hp >= 60 ? 'var(--color-text-primary)' : member.hp >= 30 ? '#888888' : '#BBBBBB' }} />
+        </div>
+        <span className="text-xs font-semibold tabular-nums shrink-0 text-text-primary">{member.hp}</span>
+      </div>
+
+      <p className="text-sm text-text-secondary">"{member.oneLiner}"</p>
 
       <div className="flex gap-2">
-        <input type="text" value={input} onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && addItem()}
-          placeholder="할 일 추가..."
-          className="flex-1 px-3 py-1.5 rounded-md text-sm focus:outline-none"
-          style={{ background: 'var(--color-surface-strong)', border: '1px solid rgba(0,0,0,0.12)', color: 'var(--color-text-primary)' }} />
-        <button type="button" onClick={addItem}
-          className="px-3 py-1.5 rounded-md text-sm font-medium"
-          style={{ background: 'var(--color-btn-primary-bg)', color: 'var(--color-btn-primary-text)', opacity: input.trim() ? 1 : 0.4 }}>
-          추가
-        </button>
+        {REACTION_EMOJIS.map(({ emoji: e, tooltip, bg }) => (
+          <div key={e} className="relative flex-1">
+            <AnimatePresence>
+              {hoveredEmoji === e && (
+                <motion.div
+                  initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }}
+                  transition={{ duration: 0.12 }}
+                  className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs px-2 py-1 rounded-sm pointer-events-none z-10 shadow-card"
+                  style={{ background: '#1A1A1A', color: '#fff' }}>
+                  {tooltip}
+                  <div className="absolute top-full left-1/2 -translate-x-1/2"
+                    style={{ width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '4px solid #1A1A1A' }} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+            <button type="button" onClick={() => onReaction(e)}
+              onMouseEnter={() => setHoveredEmoji(e)}
+              onMouseLeave={() => setHoveredEmoji(null)}
+              className="w-full flex items-center justify-center gap-1.5 py-2 rounded-md text-sm transition-all duration-150 hover:scale-105 focus:outline-none shadow-card"
+              style={{ background: bg }} aria-label={tooltip}>
+              <span aria-hidden>{e}</span>
+              {(reactionCounts[e] ?? 0) > 0 && (
+                <span className="text-xs font-medium tabular-nums text-text-secondary">{reactionCounts[e]}</span>
+              )}
+            </button>
+          </div>
+        ))}
       </div>
-
-      {items.length === 0 && (
-        <div className="flex-1 flex items-center justify-center py-4">
-          <p className="text-sm text-text-muted text-center">오늘 할일을 등록해보세요 🗒️</p>
-        </div>
-      )}
-      {items.length > 0 && (
-        <ul className="flex flex-col gap-1">
-          {items.map((item) => (
-            <li key={item.id} className="flex items-center gap-2 group px-1 py-0.5 rounded-md hover:bg-black/[0.03]">
-              <button type="button" onClick={() => toggle(item.id)}
-                className="w-4 h-4 shrink-0 rounded flex items-center justify-center transition-all"
-                style={{ border: item.done ? 'none' : '1.5px solid rgba(0,0,0,0.25)', background: item.done ? 'var(--color-btn-primary-bg)' : 'transparent' }}>
-                {item.done && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l3 3 5-6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-              </button>
-              <span className="flex-1 text-sm text-text-primary" style={{ textDecoration: item.done ? 'line-through' : 'none', opacity: item.done ? 0.45 : 1 }}>
-                {item.text}
-              </span>
-              <button type="button" onClick={() => remove(item.id)}
-                className="opacity-0 group-hover:opacity-50 hover:!opacity-100 transition-opacity text-text-muted text-xs w-4 h-4 flex items-center justify-center">
-                ×
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
-
-// ── Dashboard ───────────────────────────────────────────
-export function Dashboard() {
-  return (
-    <div
-      className="flex flex-col md:flex-row md:gap-4 px-4 py-4 gap-4"
-      style={{ height: 'calc(100vh - var(--header-height) - var(--bottomnav-height))', overflow: 'hidden' }}
-    >
-      <div className="flex-1 min-w-0 flex flex-col gap-4 overflow-y-auto overflow-x-visible md:pb-4 pb-[72px] px-4 -mx-4 md:h-full" style={{ scrollbarWidth: 'none' }}>
-        <p className="font-semibold shrink-0 text-sm text-text-primary">{getDateLabel()}</p>
-        <div className="grid grid-cols-2 gap-4 items-stretch shrink-0">
-          <WeatherCard />
-          <HPGauge />
-        </div>
-        <div className="shrink-0"><OneLinerInput /></div>
-        <div className="shrink-0"><EventPanel /></div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:flex-1 md:min-h-0 shrink-0 md:shrink">
-          <div className="min-w-0 md:overflow-hidden"><DDayWidget /></div>
-          <div className="min-w-0 md:overflow-hidden"><Checklist /></div>
-        </div>
-        <div className="md:hidden shrink-0"><TimelinePanel /></div>
-
-      </div>
-
-      <div className="hidden md:block md:w-[360px] md:min-w-[240px] md:max-w-[700px] md:shrink-0">
-        <TimelinePanel />
-      </div>
-    </div>
+    </motion.article>
   );
 }
