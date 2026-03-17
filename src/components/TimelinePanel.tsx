@@ -2,16 +2,38 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '../store/useAppStore';
 import { useAuthStore } from '../store/useAuthStore';
-import { MOCK_TEAM_MEMBERS } from '../data/team';
-import { getReactions } from '../utils/storage';
+import { fetchReactionsForUser } from '../utils/reactions';
+import { supabase } from '../lib/supabase';
 
-function useMyReactionEntries(userName: string) {
-  const me = MOCK_TEAM_MEMBERS.find((m) => m.name === userName);
-  if (!me) return [];
-  const reactions = getReactions()[me.id] ?? {};
-  return Object.entries(reactions)
-    .filter(([, count]) => count > 0)
-    .map(([emoji, count]) => ({ emoji, count }));
+function useMyReactionEntries(userName: string, team: string) {
+  const [entries, setEntries] = useState<{ emoji: string; count: number }[]>([]);
+
+  useEffect(() => {
+    if (!userName || !team) return;
+
+    const load = () =>
+      fetchReactionsForUser(userName, team).then((reactions) => {
+        setEntries(
+          Object.entries(reactions)
+            .filter(([, count]) => count > 0)
+            .map(([emoji, count]) => ({ emoji, count }))
+        );
+      });
+
+    load();
+
+    const channel = supabase
+      .channel('timeline_reactions')
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'reactions',
+        filter: `to_user=eq.${userName}`,
+      }, () => load())
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [userName, team]);
+
+  return entries;
 }
 
 function getRetireConfirmMessage(hp: number): { title: string; confirm: string; cancel: string } {
@@ -33,9 +55,7 @@ export function RetireConfirmModal({ hp, onConfirm, onCancel }: { hp: number; on
       className="mx-3 mb-3 p-4 rounded-md flex flex-col gap-3"
       style={{ background: 'var(--color-surface-strong)', boxShadow: 'var(--shadow-elevated)' }}
     >
-      <p className="text-sm font-medium text-center whitespace-pre-line text-text-primary">
-        {msg.title}
-      </p>
+      <p className="text-sm font-medium text-center whitespace-pre-line text-text-primary">{msg.title}</p>
       <div className="flex flex-col gap-2">
         <button type="button" onClick={onConfirm}
           className="w-full py-2.5 rounded-full text-sm font-bold transition-all active:scale-[0.98] focus:outline-none"
@@ -62,6 +82,7 @@ export function TimelinePanel() {
   const weatherState = useAppStore((s) => s.weatherState);
   const hp = useAppStore((s) => s.hp);
   const userName = useAuthStore((s) => s.userName);
+  const team = useAuthStore((s) => s.team);
 
   const isDark = weatherState === 'stormy' || weatherState === 'dead';
   const isReadOnly = isRetired || isViewingDashboard;
@@ -70,7 +91,7 @@ export function TimelinePanel() {
   const [confirmClear, setConfirmClear] = useState(false);
   const [showRetireConfirm, setShowRetireConfirm] = useState(false);
 
-  const reactionEntries = useMyReactionEntries(userName);
+  const reactionEntries = useMyReactionEntries(userName, team);
   const eventListRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -102,7 +123,6 @@ export function TimelinePanel() {
       data-testid="timeline"
       aria-label="오늘의 기록 타임라인"
     >
-      {/* 헤더 */}
       <div className="flex items-center justify-between shrink-0 px-4"
         style={{ borderBottom: '1px solid var(--color-border)', paddingTop: 14, paddingBottom: 14 }}>
         <h3 className="text-sm font-semibold text-text-primary">오늘의 기록</h3>
@@ -120,7 +140,6 @@ export function TimelinePanel() {
         </AnimatePresence>
       </div>
 
-      {/* 스크롤 영역 */}
       <div className={isMobile ? 'overflow-visible' : 'overflow-y-auto flex-1 min-h-0'}>
         {!hasContent ? (
           <div className="flex items-center justify-center px-4 py-8">
@@ -183,7 +202,6 @@ export function TimelinePanel() {
         )}
       </div>
 
-      {/* 퇴근하기 버튼 */}
       <div className="hidden md:block shrink-0">
         <AnimatePresence>
           {showRetireConfirm && (
@@ -194,8 +212,7 @@ export function TimelinePanel() {
         </AnimatePresence>
         {!showRetireConfirm && (
           <div className="px-3 pt-3 pb-4" style={{ borderTop: '1px solid var(--color-border)' }}>
-            <button
-              type="button"
+            <button type="button"
               onClick={() => !isRetired && setShowRetireConfirm(true)}
               disabled={isRetired}
               className="w-full py-3 rounded-full font-bold text-sm transition-all duration-200 active:scale-[0.98] focus:outline-none disabled:cursor-not-allowed"
@@ -204,8 +221,7 @@ export function TimelinePanel() {
                 color: isRetired ? 'var(--color-text-muted)' : 'var(--color-btn-primary-text)',
                 boxShadow: isRetired ? 'none' : '0 4px 20px rgba(0,0,0,0.15)',
               }}
-              data-testid="btn-checkout"
-            >
+              data-testid="btn-checkout">
               {isRetired ? '🌙 오늘 퇴근 완료!' : '🚪 퇴근하기'}
             </button>
           </div>
