@@ -89,7 +89,7 @@ export function LoginScreen() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 weather-sunny">
-      <div className="w-full max-w-sm">
+      <div className="w-full max-w-md">
 
         <div className="text-center mb-10">
           <h1 className="text-3xl font-bold text-text-primary">오늘 회사에서 살아남기</h1>
@@ -125,11 +125,10 @@ export function LoginScreen() {
               {mode === 'team' && (
                 <motion.div
                   key="team-fields"
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.25, ease: 'easeInOut' }}
-                  style={{ overflow: 'hidden' }}
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.2, ease: 'easeInOut' }}
                   className="flex flex-col gap-4"
                 >
                   {/* 본부 + 유닛 */}
