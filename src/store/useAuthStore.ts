@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { getAuth, setAuth, clearAuth } from '../utils/storage';
 import { supabase } from '../lib/supabase';
+import { useAppStore } from './useAppStore';
 
 type AuthStore = {
   userName: string;
@@ -34,6 +35,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
     set({ userName: name, team: teamName });
     setAuth({ userName: name, team: teamName });
     await upsertUserStatus(name, teamName);
+    useAppStore.getState().hydrate();
   },
 
   logout() {
