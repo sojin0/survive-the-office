@@ -43,10 +43,21 @@ const selectStyle = (focused: boolean, disabled = false): React.CSSProperties =>
   backgroundPosition: 'right 12px center',
 });
 
+const inputStyle = (focused: boolean): React.CSSProperties => ({
+  outline: 'none',
+  color: 'var(--color-text-primary)',
+  border: focused ? '2px solid var(--color-primary)' : '1.5px solid rgba(0,0,0,0.15)',
+  boxShadow: focused ? '0 0 0 4px rgba(26,26,26,0.08)' : 'var(--shadow-card)',
+});
+
+type InviteMode = 'select' | 'custom';
+
 function InviteModal({ onClose }: { onClose: () => void }) {
   const login = useAuthStore((s) => s.login);
   const userName = useAuthStore((s) => s.userName);
 
+  const [inviteMode, setInviteMode] = useState<InviteMode>('select');
+  const [customTeamName, setCustomTeamName] = useState('');
   const [selectedBH, setSelectedBH] = useState('');
   const [selectedUnit, setSelectedUnit] = useState('');
   const [selectedTeam, setSelectedTeam] = useState('');
@@ -59,7 +70,9 @@ function InviteModal({ onClose }: { onClose: () => void }) {
   const teamList = getTeamList(selectedBH, selectedUnit);
 
   const getTeamString = () =>
-    [selectedBH, selectedUnit, selectedTeam].filter(Boolean).join(' ');
+    inviteMode === 'custom'
+      ? customTeamName.trim()
+      : [selectedBH, selectedUnit, selectedTeam].filter(Boolean).join(' ');
 
   const handleBHChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedBH(e.target.value);
@@ -67,8 +80,10 @@ function InviteModal({ onClose }: { onClose: () => void }) {
     setSelectedTeam('');
   };
 
+  const canCopy = inviteMode === 'custom' ? customTeamName.trim().length > 0 : selectedTeam.length > 0;
+
   const handleCopy = () => {
-    if (!selectedTeam) return;
+    if (!canCopy) return;
     const url = `${window.location.origin}?team=${encodeURIComponent(getTeamString())}`;
     navigator.clipboard.writeText(url).catch(() => {});
     setCopied(true);
@@ -92,71 +107,91 @@ function InviteModal({ onClose }: { onClose: () => void }) {
         <h3 className="text-base font-bold text-text-primary">팀 초대 링크 만들기</h3>
         <button type="button" onClick={onClose} className="text-text-muted hover:opacity-70 text-lg">×</button>
       </div>
-      <p className="text-sm text-text-secondary">어느 팀으로 초대할까요?</p>
 
-      <div className="flex flex-col gap-1.5">
-        <span className="text-sm font-medium text-text-primary">본부 · 유닛</span>
-        <div className="flex gap-2 min-w-0">
-          <select
-            value={selectedBH}
-            onChange={handleBHChange}
-            onFocus={() => setFocused('bh')}
-            onBlur={() => setFocused(null)}
-            className="flex-1 min-w-0 px-3 py-3 rounded-md bg-white transition-all duration-150 appearance-none truncate"
-            style={selectStyle(focused === 'bh')}
-          >
-            <option value="" disabled>본부</option>
-            {ORG.map((o) => <option key={o.본부} value={o.본부}>{o.본부}</option>)}
-          </select>
-          <select
-            value={selectedUnit}
-            onChange={(e) => { setSelectedUnit(e.target.value); setSelectedTeam(''); }}
-            onFocus={() => setFocused('unit')}
-            onBlur={() => setFocused(null)}
-            disabled={!showUnitSelect || !selectedBH}
-            className="flex-1 min-w-0 px-3 py-3 rounded-md bg-white transition-all duration-150 appearance-none truncate"
-            style={selectStyle(focused === 'unit', !showUnitSelect || !selectedBH)}
-          >
-            <option value="" disabled>{!selectedBH ? '유닛' : !showUnitSelect ? '해당 없음' : '유닛'}</option>
-            {unitList.map((u) => <option key={u.유닛명!} value={u.유닛명!}>{u.유닛명}</option>)}
-          </select>
-        </div>
-      </div>
+      <AnimatePresence mode="wait">
+        {inviteMode === 'select' ? (
+          <motion.div key="select" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-4">
+            <p className="text-sm text-text-secondary">어느 팀으로 초대할까요?</p>
 
-      <label className="flex flex-col gap-1.5">
-        <span className="text-sm font-medium text-text-primary" style={{ opacity: teamList.length > 0 ? 1 : 0.4 }}>팀</span>
-        <select
-          value={selectedTeam}
-          onChange={(e) => setSelectedTeam(e.target.value)}
-          onFocus={() => setFocused('team')}
-          onBlur={() => setFocused(null)}
-          disabled={teamList.length === 0}
-          className="w-full px-4 py-3 rounded-md bg-white transition-all duration-150 appearance-none"
-          style={selectStyle(focused === 'team', teamList.length === 0)}
-        >
-          <option value="" disabled>
-            {!selectedBH ? '본부를 먼저 선택하세요' : showUnitSelect && !selectedUnit ? '유닛을 먼저 선택하세요' : '팀을 선택하세요'}
-          </option>
-          {teamList.map((t) => <option key={t} value={t}>{t}</option>)}
-        </select>
-      </label>
+            <div className="flex flex-col gap-1.5">
+              <span className="text-sm font-medium text-text-primary">본부 · 유닛</span>
+              <div className="flex gap-2 min-w-0">
+                <select value={selectedBH} onChange={handleBHChange}
+                  onFocus={() => setFocused('bh')} onBlur={() => setFocused(null)}
+                  className="flex-1 min-w-0 px-3 py-3 rounded-md bg-white transition-all duration-150 appearance-none truncate"
+                  style={selectStyle(focused === 'bh')}>
+                  <option value="" disabled>본부</option>
+                  {ORG.map((o) => <option key={o.본부} value={o.본부}>{o.본부}</option>)}
+                </select>
+                <select value={selectedUnit}
+                  onChange={(e) => { setSelectedUnit(e.target.value); setSelectedTeam(''); }}
+                  onFocus={() => setFocused('unit')} onBlur={() => setFocused(null)}
+                  disabled={!showUnitSelect || !selectedBH}
+                  className="flex-1 min-w-0 px-3 py-3 rounded-md bg-white transition-all duration-150 appearance-none truncate"
+                  style={selectStyle(focused === 'unit', !showUnitSelect || !selectedBH)}>
+                  <option value="" disabled>{!selectedBH ? '유닛' : !showUnitSelect ? '해당 없음' : '유닛'}</option>
+                  {unitList.map((u) => <option key={u.유닛명!} value={u.유닛명!}>{u.유닛명}</option>)}
+                </select>
+              </div>
+            </div>
 
-      <button
-        type="button"
-        onClick={handleCopy}
-        disabled={!selectedTeam}
+            <label className="flex flex-col gap-1.5">
+              <span className="text-sm font-medium text-text-primary" style={{ opacity: teamList.length > 0 ? 1 : 0.4 }}>팀</span>
+              <select value={selectedTeam} onChange={(e) => setSelectedTeam(e.target.value)}
+                onFocus={() => setFocused('team')} onBlur={() => setFocused(null)}
+                disabled={teamList.length === 0}
+                className="w-full px-4 py-3 rounded-md bg-white transition-all duration-150 appearance-none"
+                style={selectStyle(focused === 'team', teamList.length === 0)}>
+                <option value="" disabled>
+                  {!selectedBH ? '본부를 먼저 선택하세요' : showUnitSelect && !selectedUnit ? '유닛을 먼저 선택하세요' : '팀을 선택하세요'}
+                </option>
+                {teamList.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </label>
+
+            {/* 원하는 팀 만들기 버튼 */}
+            <button type="button" onClick={() => setInviteMode('custom')}
+              className="text-sm text-center py-2 rounded-lg transition-all text-text-secondary hover:opacity-70"
+              style={{ background: 'rgba(0,0,0,0.05)' }}>
+              🏷️ 원하는 팀 만들기
+            </button>
+          </motion.div>
+        ) : (
+          <motion.div key="custom" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-3">
+            <p className="text-sm text-text-secondary">팀 이름을 직접 만들어보세요</p>
+            <div className="flex flex-col gap-1.5">
+              <span className="text-sm font-medium text-text-primary">팀 이름</span>
+              <input
+                type="text"
+                value={customTeamName}
+                onChange={(e) => setCustomTeamName(e.target.value)}
+                onFocus={() => setFocused('customTeam')}
+                onBlur={() => setFocused(null)}
+                placeholder="예) 본부장실, 크로스팀..."
+                autoFocus
+                className="w-full px-4 py-3 rounded-md bg-white transition-all duration-150"
+                style={inputStyle(focused === 'customTeam')}
+              />
+              <p className="text-xs text-text-muted">💡 같은 이름을 입력하면 함께 참여할 수 있어요</p>
+            </div>
+            <button type="button" onClick={() => { setInviteMode('select'); setCustomTeamName(''); }}
+              className="text-sm text-center py-2 rounded-lg transition-all text-text-secondary hover:opacity-70"
+              style={{ background: 'rgba(0,0,0,0.05)' }}>
+              ← 목록에서 선택하기
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <button type="button" onClick={handleCopy} disabled={!canCopy}
         className="w-full py-3 rounded-full font-bold text-sm transition-all duration-150 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
-        style={{ background: 'var(--color-btn-primary-bg)', color: 'var(--color-btn-primary-text)' }}
-      >
+        style={{ background: 'var(--color-btn-primary-bg)', color: 'var(--color-btn-primary-text)' }}>
         {copied ? '✅ 링크 복사됨!' : '🔗 초대 링크 복사하기'}
       </button>
 
       <AnimatePresence>
         {copied && !joined && (
-          <motion.div
-            initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }}
-            className="flex flex-col gap-2"
-          >
+          <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }} className="flex flex-col gap-2">
             <p className="text-xs text-center text-text-muted">나도 이 팀으로 합류할까요?</p>
             <div className="flex gap-2">
               <button type="button" onClick={handleJoin}
@@ -173,10 +208,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
           </motion.div>
         )}
         {joined && (
-          <motion.p
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            className="text-sm text-center font-medium text-text-primary"
-          >
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-sm text-center font-medium text-text-primary">
             🎉 팀에 합류했어요!
           </motion.p>
         )}
@@ -203,15 +235,12 @@ function SoloEmptyState() {
         style={{ background: 'var(--color-btn-primary-bg)', color: 'var(--color-btn-primary-text)' }}>
         팀원 초대하기 🔗
       </button>
-
       <AnimatePresence>
         {showModal && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
             style={{ background: 'rgba(0,0,0,0.4)' }}
-            onClick={(e) => e.target === e.currentTarget && setShowModal(false)}
-          >
+            onClick={(e) => e.target === e.currentTarget && setShowModal(false)}>
             <InviteModal onClose={() => setShowModal(false)} />
           </motion.div>
         )}
@@ -230,25 +259,18 @@ export function TeamBoard({ onWeatherChange }: { onWeatherChange?: (w: WeatherSt
   const userName = useAuthStore((s) => s.userName);
   const userTeam = useAuthStore((s) => s.team);
 
-  // 솔로 모드일 때 내 날씨로 배경 설정
   useEffect(() => {
-    if (!userTeam) {
-      onWeatherChange?.(myWeather);
-    }
+    if (!userTeam) onWeatherChange?.(myWeather);
   }, [userTeam, myWeather, onWeatherChange]);
 
-  // 팀원 + 응원 불러오기
   useEffect(() => {
     if (!userTeam) return;
-
     const fetchAll = async () => {
       const [{ data }, reactionData] = await Promise.all([
         supabase.from('user_status').select('*').eq('team', userTeam).order('updated_at', { ascending: false }),
         fetchReactionsForTeam(userTeam),
       ]);
-
       if (!data) return;
-
       const members = data.map((row) => ({
         id: row.id,
         name: row.user_name,
@@ -258,65 +280,39 @@ export function TeamBoard({ onWeatherChange }: { onWeatherChange?: (w: WeatherSt
         oneLiner: row.one_liner ?? '오늘도 살아남는 중...',
       }));
       setTeamMembers(members);
-
       const reactionsById: Record<string, Record<string, number>> = {};
       for (const member of members) {
-        if (reactionData[member.name]) {
-          reactionsById[member.id] = reactionData[member.name];
-        }
+        if (reactionData[member.name]) reactionsById[member.id] = reactionData[member.name];
       }
       setReactionsState(reactionsById);
     };
-
     fetchAll();
-
-    const statusChannel = supabase
-      .channel('team_status')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_status', filter: `team=eq.${userTeam}` },
-        () => fetchAll())
+    const statusChannel = supabase.channel('team_status')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_status', filter: `team=eq.${userTeam}` }, () => fetchAll())
       .subscribe();
-
-    const reactionChannel = supabase
-      .channel('team_reactions')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'reactions', filter: `team=eq.${userTeam}` },
-        () => fetchReactionsForTeam(userTeam).then(setReactionsState))
+    const reactionChannel = supabase.channel('team_reactions')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'reactions', filter: `team=eq.${userTeam}` }, () => fetchReactionsForTeam(userTeam).then(setReactionsState))
       .subscribe();
-
-    return () => {
-      supabase.removeChannel(statusChannel);
-      supabase.removeChannel(reactionChannel);
-    };
+    return () => { supabase.removeChannel(statusChannel); supabase.removeChannel(reactionChannel); };
   }, [userTeam, userName]);
 
   const mergedMembers = useMemo(() =>
-    teamMembers.map((m) =>
-      m.name === userName
-        ? { ...m, hp: myHp, weatherState: myWeather, oneLiner: myOneLiner }
-        : m
-    ), [teamMembers, userName, myHp, myWeather, myOneLiner]);
+    teamMembers.map((m) => m.name === userName ? { ...m, hp: myHp, weatherState: myWeather, oneLiner: myOneLiner } : m),
+    [teamMembers, userName, myHp, myWeather, myOneLiner]);
 
   const teamWeather = useMemo(() =>
     mergedMembers.length > 0 ? getTeamAverageWeather(mergedMembers) : 'sunny',
-    [mergedMembers]
-  );
+    [mergedMembers]);
 
   useEffect(() => {
-    if (userTeam) {
-      onWeatherChange?.(teamWeather);
-    }
+    if (userTeam) onWeatherChange?.(teamWeather);
   }, [teamWeather, userTeam, onWeatherChange]);
 
   const setReaction = useCallback(async (toUserId: string, emoji: string) => {
     const toUserName = teamMembers.find((m) => m.id === toUserId)?.name;
     if (!toUserName) return;
     await sendReaction(userName, toUserName, userTeam, emoji);
-    setReactionsState((prev) => ({
-      ...prev,
-      [toUserId]: {
-        ...(prev[toUserId] ?? {}),
-        [emoji]: (prev[toUserId]?.[emoji] ?? 0) + 1,
-      },
-    }));
+    setReactionsState((prev) => ({ ...prev, [toUserId]: { ...(prev[toUserId] ?? {}), [emoji]: (prev[toUserId]?.[emoji] ?? 0) + 1 } }));
   }, [userName, userTeam, teamMembers]);
 
   const handleInviteClick = useCallback(() => {
@@ -346,8 +342,7 @@ export function TeamBoard({ onWeatherChange }: { onWeatherChange?: (w: WeatherSt
 
       <AnimatePresence>
         {showToast && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
             className="fixed bottom-24 left-4 right-4 z-50 mx-auto max-w-sm py-3 px-4 rounded-md text-center text-sm shadow-elevated"
             style={{ background: '#1A1A1A', color: '#fff' }}
@@ -362,12 +357,9 @@ export function TeamBoard({ onWeatherChange }: { onWeatherChange?: (w: WeatherSt
           <p className="text-sm text-text-muted col-span-full text-center py-8">팀원 데이터를 불러오는 중... 👀</p>
         ) : (
           mergedMembers.map((member) => (
-            <TeamMemberCard
-              key={member.id}
-              member={member}
+            <TeamMemberCard key={member.id} member={member}
               reactionCounts={reactions[member.id] ?? {}}
-              onReaction={(emoji) => setReaction(member.id, emoji)}
-            />
+              onReaction={(emoji) => setReaction(member.id, emoji)} />
           ))
         )}
       </div>
@@ -387,9 +379,7 @@ function TeamMemberCard({ member, reactionCounts, onReaction }: TeamMemberCardPr
   const label = getWeatherLabel(member.weatherState);
 
   return (
-    <motion.article
-      initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-      className="glass-card flex flex-col gap-3 p-5">
+    <motion.article initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="glass-card flex flex-col gap-3 p-5">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <p className="font-bold text-text-primary">{member.name}</p>
@@ -401,7 +391,6 @@ function TeamMemberCard({ member, reactionCounts, onReaction }: TeamMemberCardPr
         </div>
         <span className="text-2xl shrink-0" role="img" aria-label={label}>{emoji}</span>
       </div>
-
       <div className="flex items-center gap-3">
         <span className="text-xs shrink-0 text-text-muted">HP</span>
         <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(0,0,0,0.08)' }}>
@@ -412,16 +401,13 @@ function TeamMemberCard({ member, reactionCounts, onReaction }: TeamMemberCardPr
         </div>
         <span className="text-xs font-semibold tabular-nums shrink-0 text-text-primary">{member.hp}</span>
       </div>
-
       <p className="text-sm text-text-secondary">"{member.oneLiner}"</p>
-
       <div className="flex gap-2">
         {REACTION_EMOJIS.map(({ emoji: e, tooltip, bg }) => (
           <div key={e} className="relative flex-1">
             <AnimatePresence>
               {hoveredEmoji === e && (
-                <motion.div
-                  initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }}
+                <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }}
                   transition={{ duration: 0.12 }}
                   className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs px-2 py-1 rounded-sm pointer-events-none z-10 shadow-card"
                   style={{ background: '#1A1A1A', color: '#fff' }}>
