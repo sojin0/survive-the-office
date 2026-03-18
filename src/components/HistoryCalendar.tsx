@@ -1,7 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getHistory } from '../utils/storage';
 import { useAppStore } from '../store/useAppStore';
+import { useAuthStore } from '../store/useAuthStore';
+import { fetchReactionsForUser } from '../utils/reactions';
+import { supabase } from '../lib/supabase';
 
 function getTodayKey() { return new Date().toISOString().slice(0, 10); }
 
@@ -63,6 +66,7 @@ export function HistoryCalendar() {
   const [year, setYear] = useState(() => new Date().getFullYear());
   const [month, setMonth] = useState(() => new Date().getMonth() + 1);
   const [selectedDate, setSelectedDate] = useState<string | null>(getTodayKey());
+  const [todayReactions, setTodayReactions] = useState<{ emoji: string; count: number }[]>([]);
 
   const history = getHistory();
   const calendarDays = useMemo(() => getCalendarDays(year, month), [year, month]);
@@ -73,8 +77,55 @@ export function HistoryCalendar() {
   const eventLog = useAppStore((s) => s.eventLog);
   const weatherState = useAppStore((s) => s.weatherState);
   const survivalGrade = useAppStore((s) => s.survivalGrade);
+  const userName = useAuthStore((s) => s.userName);
+  const team = useAuthStore((s) => s.team);
 
-  const todayData = { date: todayKey, hp, minHp, eventLog, weatherState, survivalGrade: survivalGrade ?? '' };
+  // 오늘 응원 실시간 로드
+  useEffect(() => {
+    if (!userName || !team) return;
+
+    fetchReactionsForUser(userName, team).then((reactions) => {
+      setTodayReactions(
+        Object.entries(reactions)
+          .filter(([, count]) => count > 0)
+          .map(([emoji, count]) => ({ emoji, count }))
+      );
+    });
+
+    const channel = supabase
+      .channel('history_reactions')
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'reactions',
+        filter: `to_user=eq.${userName}`,
+      }, () => {
+        fetchReactionsForUser(userName, team).then((reactions) => {
+          setTodayReactions(
+            Object.entries(reactions)
+              .filter(([, count]) => count > 0)
+              .map(([emoji, count]) => ({ emoji, count }))
+          );
+        });
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [userName, team]);
+
+  const checklistItems = (() => {
+    try {
+      const savedDate = localStorage.getItem('checklist_date_v1');
+      const today = new Date().toISOString().slice(0, 10);
+      if (savedDate !== today) return [];
+      return JSON.parse(localStorage.getItem('checklist_v1') ?? '[]');
+    } catch { return []; }
+  })();
+
+  const todayData = {
+    date: todayKey, hp, minHp, eventLog, weatherState,
+    survivalGrade: survivalGrade ?? '',
+    missions: checklistItems,
+    reactions: todayReactions,
+  };
 
   const selectedRecord = selectedDate === null ? null
     : selectedDate === todayKey ? todayData
@@ -105,6 +156,7 @@ export function HistoryCalendar() {
           initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
           className="glass-card flex flex-col gap-4 p-5"
         >
+          {/* 헤더 */}
           <div>
             <p className="font-bold text-base text-text-primary">{selectedDate}</p>
             <p className="text-sm mt-0.5 text-text-secondary">
@@ -121,18 +173,51 @@ export function HistoryCalendar() {
 
           {/* HP 바 */}
           <div className="h-2 rounded-full overflow-hidden bg-hp-bg">
-            <div
-              className="h-full rounded-full transition-all duration-500"
+            <div className="h-full rounded-full transition-all duration-500"
               style={{
                 width: `${selectedRecord.hp}%`,
-                background: selectedRecord.hp >= 60
-                  ? 'var(--color-text-primary)'
-                  : selectedRecord.hp >= 30
-                  ? 'var(--color-text-muted)'
-                  : 'var(--color-faint)',
-              }}
-            />
+                background: selectedRecord.hp >= 60 ? 'var(--color-text-primary)'
+                  : selectedRecord.hp >= 30 ? 'var(--color-text-muted)' : 'var(--color-faint)',
+              }} />
           </div>
+
+          {/* 팀원 응원 */}
+          {selectedRecord.reactions && selectedRecord.reactions.length > 0 && (
+            <div className="pt-4" style={{ borderTop: '1px solid var(--color-border)' }}>
+              <p className="text-xs font-semibold mb-3 text-text-muted">팀원 응원 🎉</p>
+              <div className="flex flex-wrap gap-2">
+                {selectedRecord.reactions.map(({ emoji, count }: { emoji: string; count: number }) => (
+                  <div key={emoji} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm text-text-secondary"
+                    style={{ background: 'rgba(0,0,0,0.06)' }}>
+                    <span>{emoji}</span>
+                    <span className="text-xs font-medium tabular-nums">{count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 오늘의 미션 */}
+          {selectedRecord.missions && selectedRecord.missions.length > 0 && (
+            <div className="pt-4" style={{ borderTop: '1px solid var(--color-border)' }}>
+              <p className="text-xs font-semibold mb-3 text-text-muted">
+                오늘의 미션 ({selectedRecord.missions.filter((m: any) => m.done).length}/{selectedRecord.missions.length})
+              </p>
+              <ul className="flex flex-col gap-1.5">
+                {selectedRecord.missions.map((mission: any, i: number) => (
+                  <li key={i} className="flex items-center gap-2 text-sm">
+                    <span className="w-4 h-4 shrink-0 rounded flex items-center justify-center"
+                      style={{ background: mission.done ? 'var(--color-btn-primary-bg)' : 'transparent', border: mission.done ? 'none' : '1.5px solid rgba(0,0,0,0.25)' }}>
+                      {mission.done && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l3 3 5-6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                    </span>
+                    <span className="text-text-primary" style={{ textDecoration: mission.done ? 'line-through' : 'none', opacity: mission.done ? 0.5 : 1 }}>
+                      {mission.text}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* 이벤트 기록 */}
           <div className="pt-4" style={{ borderTop: '1px solid var(--color-border)' }}>
@@ -146,17 +231,12 @@ export function HistoryCalendar() {
                 {selectedRecord.eventLog.map((log: any) => (
                   <li key={log.id} className="flex items-center gap-2 text-sm">
                     <span className="tabular-nums shrink-0 text-text-muted text-[10px] w-9">{log.timestamp}</span>
-                    <span
-                      className="w-2 h-2 rounded-full shrink-0"
-                      style={{ background: log.hpDelta >= 0 ? 'var(--color-text-primary)' : 'var(--color-faint)' }}
-                      aria-hidden
-                    />
+                    <span className="w-2 h-2 rounded-full shrink-0"
+                      style={{ background: log.hpDelta >= 0 ? 'var(--color-text-primary)' : 'var(--color-faint)' }} aria-hidden />
                     <span aria-hidden>{log.emoji}</span>
                     <span className="flex-1 truncate text-text-primary">{log.name}</span>
-                    <span
-                      className="font-semibold tabular-nums shrink-0"
-                      style={{ color: log.hpDelta >= 0 ? 'var(--color-text-primary)' : 'var(--color-text-muted)' }}
-                    >
+                    <span className="font-semibold tabular-nums shrink-0"
+                      style={{ color: log.hpDelta >= 0 ? 'var(--color-text-primary)' : 'var(--color-text-muted)' }}>
                       {log.hpDelta >= 0 ? '+' : ''}{log.hpDelta}
                     </span>
                   </li>
@@ -207,21 +287,15 @@ export function HistoryCalendar() {
                 <button key={date} type="button"
                   onClick={() => setSelectedDate(isSelected ? null : date)}
                   className="flex flex-col items-center justify-center py-1 gap-0.5 transition-all focus:outline-none rounded-[6px]"
-                  style={{
-                    minHeight: 40,
-                    background: isSelected ? 'rgba(0,0,0,0.08)' : 'transparent',
-                    opacity: isCurrentMonth ? 1 : 0.3,
-                  }}
+                  style={{ minHeight: 40, background: isSelected ? 'rgba(0,0,0,0.08)' : 'transparent', opacity: isCurrentMonth ? 1 : 0.3 }}
                   aria-pressed={isSelected}
                 >
-                  <span
-                    className="text-xs w-5 h-5 flex items-center justify-center rounded-full"
+                  <span className="text-xs w-5 h-5 flex items-center justify-center rounded-full"
                     style={{
                       background: isToday ? 'var(--color-primary)' : 'transparent',
                       color: isToday ? 'var(--color-text-inverse)' : 'var(--color-text-primary)',
                       fontWeight: isToday || isSelected ? 700 : 400,
-                    }}
-                  >
+                    }}>
                     {day}
                   </span>
                   {record && <span className="text-xs leading-none" aria-hidden>{getWeatherEmoji(record.weatherState)}</span>}
