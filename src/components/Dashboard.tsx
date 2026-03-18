@@ -237,7 +237,7 @@ function Checklist() {
         console.log('missions data:', data, 'error:', error);
         const row = data?.[0];
         if (error) { setLoading(false); return; }
-        if (row?.last_active_date === today && Array.isArray(row.missions)) {
+        if (Array.isArray(row?.missions) && row.last_active_date === today) {
           setItems(row.missions as CheckItem[]);
         } else {
           setItems([]);
