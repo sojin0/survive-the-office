@@ -12,7 +12,6 @@
   position: fixed;
   inset: 0;
   top: var(--header-height);
-  bottom: var(--bottomnav-height);
   z-index: 0;
   pointer-events: none;
   overflow: hidden;

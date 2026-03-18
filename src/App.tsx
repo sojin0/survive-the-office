@@ -38,9 +38,11 @@ function App() {
   }
 
   return (
-    <main className={`font-sans min-h-screen relative ${isDarkWeather ? 'weather-text-dark text-white' : 'text-[var(--color-text-primary)]'}`}>
-
-      {/* 날씨 배경 — 헤더/네비 제외한 콘텐츠 영역에만 */}
+    <main
+      className={`font-sans relative overflow-hidden ${isDarkWeather ? 'weather-text-dark text-white' : 'text-[var(--color-text-primary)]'}`}
+      style={{ height: '100vh' }}
+    >
+      {/* 날씨 배경 */}
       <div className="weather-bg-wrap" aria-hidden>
         {WEATHER_IDS.map((id) => (
           <div
@@ -51,9 +53,11 @@ function App() {
         ))}
       </div>
 
-      <div className="relative z-10">
+      <div className="relative z-10 flex flex-col" style={{ height: '100vh' }}>
         <AppHeader />
-        {showDashboard ? <MainLayout /> : <SurvivalResult />}
+        <div className="flex-1 min-h-0 overflow-hidden">
+          {showDashboard ? <MainLayout /> : <SurvivalResult />}
+        </div>
       </div>
 
       {/* 퇴근하기 버튼 — 모바일 전용 */}
