@@ -208,11 +208,12 @@ function DDayWidget() {
 // ── 체크리스트 ──────────────────────────────────────────
 type CheckItem = { id: string; text: string; done: boolean };
 
-async function saveMissionsToSupabase(missions: CheckItem[], userName: string) {
+async function saveMissionsToSupabase(missions: CheckItem[], userName: string, team: string) {
   await supabase
     .from('user_status')
     .update({ missions, updated_at: new Date().toISOString() })
-    .eq('user_name', userName);
+    .eq('user_name', userName)
+    .eq('team', team);
 }
 
 function Checklist() {
@@ -233,6 +234,7 @@ function Checklist() {
       .from('user_status')
       .select('missions, last_active_date')
       .eq('user_name', userName)
+      .eq('team', team)
       .then(({ data, error }) => {
         console.log('missions data:', data, 'error:', error);
         const row = data?.[0];
@@ -248,7 +250,7 @@ function Checklist() {
 
   const save = (updated: CheckItem[]) => {
     setItems(updated);
-    if (userName) saveMissionsToSupabase(updated, userName);
+    if (userName) saveMissionsToSupabase(updated, userName, team);
     // 히스토리 저장 (로컬 히스토리용으로만 유지)
     const today = new Date().toISOString().slice(0, 10);
     const history = JSON.parse(localStorage.getItem('survive-office-history') ?? '{}');
