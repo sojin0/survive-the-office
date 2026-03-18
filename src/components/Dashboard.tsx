@@ -209,6 +209,8 @@ function DDayWidget() {
 // ── 체크리스트 ──────────────────────────────────────────
 type CheckItem = { id: string; text: string; done: boolean };
 
+const MISSIONS_DATE_KEY = 'survive-office-missions-date';
+
 async function saveMissionsToSupabase(missions: CheckItem[], userName: string, team: string) {
   await supabase
     .from('user_status')
@@ -226,24 +228,37 @@ function Checklist() {
   const userName = useAuthStore((s) => s.userName);
   const team = useAuthStore((s) => s.team);
 
-  // 앱 시작 시 Supabase에서만 불러오기
+  // 앱 시작 시 Supabase에서 불러오기
+  // missions_date(localStorage)를 기준으로 오늘 데이터 여부를 판단.
+  // last_active_date는 이벤트/reset으로 업데이트되므로 missions 신선도 기준으로 부적합.
   useEffect(() => {
     if (!userName) {
       setLoading(false);
       return;
     }
     const today = getLocalToday();
+    const missionsDate = localStorage.getItem(MISSIONS_DATE_KEY);
+    const isFresh = missionsDate === today;
 
+    if (!isFresh) {
+      // 새 날 — missions 비우고 Supabase도 초기화
+      setItems([]);
+      localStorage.setItem(MISSIONS_DATE_KEY, today);
+      saveMissionsToSupabase([], userName, team);
+      setLoading(false);
+      return;
+    }
+
+    // 오늘 missions_date가 맞으면 Supabase에서 불러옴
     supabase
       .from('user_status')
-      .select('missions, last_active_date')
+      .select('missions')
       .eq('user_name', userName)
       .eq('team', team)
       .then(({ data, error }) => {
-        console.log('missions data:', data, 'error:', error);
         const row = data?.[0];
         if (error) { setLoading(false); return; }
-        if (Array.isArray(row?.missions) && row.last_active_date === today) {
+        if (Array.isArray(row?.missions)) {
           setItems(row.missions as CheckItem[]);
         } else {
           setItems([]);
@@ -254,7 +269,10 @@ function Checklist() {
 
   const save = (updated: CheckItem[]) => {
     setItems(updated);
-    if (userName) saveMissionsToSupabase(updated, userName, team);
+    if (userName) {
+      saveMissionsToSupabase(updated, userName, team);
+      localStorage.setItem(MISSIONS_DATE_KEY, getLocalToday());
+    }
     // 히스토리 저장 (로컬 히스토리용으로만 유지)
     const today = getLocalToday();
     const history = JSON.parse(localStorage.getItem('survive-office-history') ?? '{}');
