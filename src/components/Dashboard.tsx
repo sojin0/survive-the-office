@@ -236,13 +236,16 @@ function Checklist() {
       .eq('user_name', userName)
       .eq('team', team)
       .single()
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) {
+          console.error('missions fetch error:', error);
+          setLoading(false);
+          return;
+        }
         if (data?.last_active_date === today && Array.isArray(data.missions)) {
           setItems(data.missions as CheckItem[]);
         } else {
-          // 날짜가 다르면 빈 배열로 초기화
           setItems([]);
-          saveMissionsToSupabase([], userName, team);
         }
         setLoading(false);
       });
