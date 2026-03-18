@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import type { EventItem } from '../types';
 import { useAppStore } from '../store/useAppStore';
@@ -19,6 +19,7 @@ export function EventButton({ event }: EventButtonProps) {
   const [tooltipVisible, setTooltipVisible] = useState(false);
   const addEvent = useAppStore((s) => s.addEvent);
   const isRetired = useAppStore((s) => s.isRetired);
+  const btnRef = useRef<HTMLButtonElement>(null);
 
   const handleClick = useCallback(() => {
     if (isRetired) return;
@@ -39,8 +40,13 @@ export function EventButton({ event }: EventButtonProps) {
 
   return (
     <div className="relative">
-      <Tooltip text={`${event.description} ${event.emoji}`} visible={tooltipVisible} />
+      <Tooltip
+        text={`${event.description} ${event.emoji}`}
+        visible={tooltipVisible}
+        anchorRef={btnRef}
+      />
       <motion.button
+        ref={btnRef}
         type="button"
         onClick={handleClick}
         disabled={isRetired}
@@ -54,35 +60,19 @@ export function EventButton({ event }: EventButtonProps) {
           transition-shadow duration-150
         "
         style={{
-          background: isPositive
-            ? 'var(--color-positive-bg)'
-            : 'var(--color-negative-bg)',
+          background: isPositive ? 'var(--color-positive-bg)' : 'var(--color-negative-bg)',
           boxShadow: 'var(--shadow-card)',
         }}
         data-testid={`event-${event.id}`}
         aria-label={`${event.name} ${deltaText} HP`}
       >
-        {/* 이모지 */}
-        <span className="text-xl shrink-0" aria-hidden>
-          {event.emoji}
-        </span>
-
-        {/* 이벤트명 */}
-        <span
-          className="flex-1 text-sm font-medium truncate"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
+        <span className="text-xl shrink-0" aria-hidden>{event.emoji}</span>
+        <span className="flex-1 text-sm font-medium truncate" style={{ color: 'var(--color-text-primary)' }}>
           {event.name}
         </span>
-
-        {/* HP 변동값 */}
         <span
           className="text-sm font-bold tabular-nums shrink-0"
-          style={{
-            color: isPositive
-              ? 'var(--color-positive-text)'
-              : 'var(--color-negative-text)',
-          }}
+          style={{ color: isPositive ? 'var(--color-positive-text)' : 'var(--color-negative-text)' }}
         >
           {deltaText}
         </span>

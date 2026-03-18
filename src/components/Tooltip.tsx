@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '../store/useAppStore';
@@ -18,8 +18,8 @@ export function Tooltip({ text, visible, anchorRef }: TooltipProps) {
     if (visible && anchorRef.current) {
       const rect = anchorRef.current.getBoundingClientRect();
       setPos({
-        top: rect.top - 44,   // scrollY 제거 — fixed는 viewport 기준
-        left: rect.left + rect.width / 2,  // scrollX 제거
+        top: rect.top - 44,
+        left: rect.left + rect.width / 2,
       });
     }
   }, [visible, anchorRef]);
@@ -34,7 +34,7 @@ export function Tooltip({ text, visible, anchorRef }: TooltipProps) {
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.2, ease: 'easeOut' }}
           style={{
-            position: 'fixed',  // absolute → fixed
+            position: 'fixed',
             top: pos.top,
             left: pos.left,
             transform: 'translateX(-50%)',
