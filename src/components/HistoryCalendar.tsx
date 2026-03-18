@@ -250,7 +250,7 @@ export function HistoryCalendar() {
   );
 
   return (
-    <div className="flex flex-col md:flex-row gap-4 p-4 pb-24 md:pb-4 min-h-[calc(100vh-var(--header-height)-var(--bottomnav-height))]">
+    <div className="flex flex-col md:flex-row gap-4 p-4 pb-32 md:pb-4 overflow-y-auto" style={{ height: 'calc(100vh - var(--header-height) - var(--bottomnav-height))' }}>
 
       {/* 왼쪽 */}
       <div className="w-full md:w-[320px] md:shrink-0 flex flex-col gap-3">

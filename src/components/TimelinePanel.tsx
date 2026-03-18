@@ -125,6 +125,7 @@ export function TimelinePanel() {
       data-testid="timeline"
       aria-label="오늘의 기록 타임라인"
     >
+      {/* 헤더 */}
       <div className="flex items-center justify-between shrink-0 px-4"
         style={{ borderBottom: '1px solid var(--color-border)', paddingTop: 14, paddingBottom: 14 }}>
         <h3 className="text-sm font-semibold text-text-primary">오늘의 기록</h3>
@@ -148,7 +149,8 @@ export function TimelinePanel() {
         </AnimatePresence>
       </div>
 
-      <div className={isMobile ? 'overflow-visible' : 'overflow-y-auto flex-1 min-h-0'}>
+      {/* 콘텐츠 — 모바일: 높이 자동(hug), 데스크탑: flex-1 스크롤 */}
+      <div className={isMobile ? '' : 'overflow-y-auto flex-1 min-h-0'}>
         {!hasContent ? (
           <div className="flex items-center justify-center px-4 py-8">
             <p className="text-sm text-text-muted">아직 기록이 없어요 👀</p>
@@ -210,6 +212,7 @@ export function TimelinePanel() {
         )}
       </div>
 
+      {/* 퇴근 버튼 — 데스크탑만 */}
       <div className="hidden md:block shrink-0">
         <AnimatePresence>
           {showRetireConfirm && (

@@ -20,7 +20,9 @@ function App() {
   const retire = useAppStore((s) => s.retire);
   const hp = useAppStore((s) => s.hp);
 
+  const unretire = useAppStore((s) => s.unretire);
   const [showRetireConfirm, setShowRetireConfirm] = useState(false);
+  const [showUnretireConfirm, setShowUnretireConfirm] = useState(false);
 
   useEffect(() => { useAuthStore.getState().hydrate(); }, []);
   useEffect(() => { hydrate(); }, [hydrate]);
@@ -78,17 +80,48 @@ function App() {
           {!showRetireConfirm && (
             <button
               type="button"
-              onClick={() => !isRetired && setShowRetireConfirm(true)}
-              disabled={isRetired}
-              className="w-full max-w-sm py-3.5 rounded-[var(--radius-full)] font-bold text-base transition-all duration-200 active:scale-[0.98] focus:outline-none disabled:cursor-not-allowed"
+              onClick={() => setShowRetireConfirm(true)}
+              className="w-full max-w-sm py-3.5 rounded-[var(--radius-full)] font-bold text-base transition-all duration-200 active:scale-[0.98] focus:outline-none"
               style={{
-                background: isRetired ? 'rgba(0,0,0,0.12)' : 'var(--color-btn-primary-bg)',
-                color: isRetired ? 'var(--color-text-muted)' : 'var(--color-btn-primary-text)',
-                boxShadow: isRetired ? 'none' : '0 4px 24px rgba(0,0,0,0.25)',
+                background: 'var(--color-btn-primary-bg)',
+                color: 'var(--color-btn-primary-text)',
+                boxShadow: '0 4px 24px rgba(0,0,0,0.25)',
               }}
               data-testid="btn-checkout-mobile"
             >
-              {isRetired ? '🌙 오늘 퇴근 완료!' : '🚪 퇴근하기'}
+              🚪 퇴근하기
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* 퇴근 번복 버튼 — 모바일 전용 */}
+      {isRetired && showDashboard && (
+        <div
+          className="md:hidden fixed left-0 right-0 flex justify-center px-4 z-50"
+          style={{ bottom: `calc(var(--bottomnav-height) + 12px)` }}
+        >
+          {showUnretireConfirm ? (
+            <div className="w-full max-w-sm flex flex-col gap-2">
+              <p className="text-xs text-center text-text-muted">퇴근을 취소할까요?</p>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => { unretire(); setShowUnretireConfirm(false); }}
+                  className="flex-1 py-3 rounded-full font-bold text-sm transition-all active:scale-[0.98]"
+                  style={{ background: 'var(--color-btn-primary-bg)', color: 'var(--color-btn-primary-text)' }}>
+                  취소할게요
+                </button>
+                <button type="button" onClick={() => setShowUnretireConfirm(false)}
+                  className="flex-1 py-3 rounded-full text-sm transition-all active:scale-[0.98] text-text-secondary"
+                  style={{ background: 'rgba(0,0,0,0.08)' }}>
+                  그냥 퇴근!
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button type="button" onClick={() => setShowUnretireConfirm(true)}
+              className="w-full max-w-sm py-3.5 rounded-full font-bold text-base transition-all duration-200 active:scale-[0.98] focus:outline-none"
+              style={{ background: 'rgba(0,0,0,0.08)', color: 'var(--color-text-muted)' }}>
+              😢 퇴근 번복하기
             </button>
           )}
         </div>

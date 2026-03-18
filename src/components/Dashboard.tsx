@@ -22,7 +22,6 @@ function useMyReactions(userName: string, team: string) {
 
     fetchReactionsForUser(userName, team).then(setReactions);
 
-    // 실시간 구독
     const channel = supabase
       .channel('my_reactions')
       .on('postgres_changes', {
@@ -144,7 +143,7 @@ function DDayWidget() {
   const removeDDay = (id: string) => save(ddays.filter((d) => d.id !== id));
 
   return (
-    <div className="glass-card p-4 flex flex-col gap-3 md:h-full">
+    <div className="glass-card p-4 flex flex-col gap-3 h-full">
       <div className="flex items-center justify-between">
         <span className="text-sm font-semibold text-text-primary">⚔️ 카운트다운</span>
         <button type="button" onClick={() => setShowAddForm((v) => !v)}
@@ -169,7 +168,8 @@ function DDayWidget() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+      {/* 1열(좁음) → 2열(중간) → 3열(넓음) 자동 반응형 */}
+      <div style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 90px), 1fr))' }}>
         {ddays.map((d) => {
           const dtext = calcDDay(d.date);
           const isPast = d.date && dtext.startsWith('D+');
@@ -235,7 +235,6 @@ function Checklist() {
     setItems(updated);
     localStorage.setItem(CHECKLIST_KEY, JSON.stringify(updated));
     localStorage.setItem(CHECKLIST_DATE_KEY, new Date().toISOString().slice(0, 10));
-    // 히스토리에 미션 저장
     const today = new Date().toISOString().slice(0, 10);
     const history = JSON.parse(localStorage.getItem('survive-office-history') ?? '{}');
     if (history[today]) {
@@ -267,7 +266,7 @@ function Checklist() {
   const doneCount = items.filter((i) => i.done).length;
 
   return (
-    <div className="glass-card p-4 flex flex-col gap-3 md:h-full">
+    <div className="glass-card p-4 flex flex-col gap-3 h-full">
       <div className="flex items-center justify-between">
         <span className="text-sm font-semibold text-text-primary">🎯 오늘의 미션</span>
         {items.length > 0 && (
@@ -275,12 +274,13 @@ function Checklist() {
         )}
       </div>
 
-      <div className="flex gap-2">
+      {/* 좁을 때 버튼이 아래로 내려가도록 flex-wrap */}
+      <div className="flex flex-wrap gap-2">
         <input type="text" value={input} onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && !isRetired && addItem()}
           placeholder={isRetired ? '퇴근 후에는 추가할 수 없어요' : '할 일 추가...'}
           disabled={isRetired}
-          className="flex-1 px-3 py-1.5 rounded-md text-sm focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
+          className="flex-1 min-w-0 px-3 py-1.5 rounded-md text-sm focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
           style={{ background: 'var(--color-surface-strong)', border: '1px solid rgba(0,0,0,0.12)', color: 'var(--color-text-primary)' }} />
         <button type="button" onClick={addItem}
           disabled={isRetired}
@@ -325,27 +325,36 @@ function Checklist() {
 // ── Dashboard ───────────────────────────────────────────
 export function Dashboard() {
   return (
-    <div
-      className="flex flex-col md:flex-row md:gap-4 px-4 py-4 gap-4"
-      style={{ height: 'calc(100vh - var(--header-height) - var(--bottomnav-height))', overflow: 'hidden' }}
-    >
-      <div className="flex-1 min-w-0 flex flex-col gap-4 overflow-y-auto overflow-x-visible md:pb-4 pb-[72px] px-4 -mx-4 md:h-full" style={{ scrollbarWidth: 'none' }}>
-        <p className="font-semibold shrink-0 text-sm text-text-primary">{getDateLabel()}</p>
-        <div className="grid grid-cols-2 gap-4 items-stretch shrink-0">
-          <WeatherCard />
-          <HPGauge />
-        </div>
-        <div className="shrink-0"><OneLinerInput /></div>
-        <div className="shrink-0"><EventPanel /></div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:flex-1 md:min-h-0 shrink-0 md:shrink">
-          <div className="min-w-0 md:overflow-hidden"><DDayWidget /></div>
-          <div className="min-w-0 md:overflow-hidden"><Checklist /></div>
-        </div>
-        <div className="md:hidden shrink-0"><TimelinePanel /></div>
+    <div className="flex flex-col md:flex-row md:gap-4 px-4 py-4 gap-4 h-full">
 
+      <div
+        className="flex-1 min-w-0 h-full overflow-y-auto"
+        style={{ scrollbarWidth: 'none', marginLeft: '-16px', marginRight: '-16px', paddingLeft: '16px', paddingRight: '16px' }}
+      >
+        <div
+          className="flex flex-col gap-4 pb-[140px] md:pb-4"
+          style={{ minHeight: '100%' }}
+        >
+          <div className="shrink-0 flex flex-col gap-4">
+            <p className="font-semibold text-sm text-text-primary">{getDateLabel()}</p>
+            <div className="grid grid-cols-2 gap-4 items-stretch">
+              <WeatherCard />
+              <HPGauge />
+            </div>
+            <OneLinerInput />
+            <EventPanel />
+          </div>
+
+          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4" style={{ minHeight: 0 }}>
+            <div className="h-full"><DDayWidget /></div>
+            <div className="h-full"><Checklist /></div>
+          </div>
+
+          <div className="md:hidden shrink-0"><TimelinePanel /></div>
+        </div>
       </div>
 
-      <div className="hidden md:block md:w-[360px] md:min-w-[240px] md:max-w-[700px] md:shrink-0">
+      <div className="hidden md:flex md:w-[360px] md:min-w-[240px] md:max-w-[700px] md:shrink-0 md:h-full">
         <TimelinePanel />
       </div>
     </div>

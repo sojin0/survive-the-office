@@ -6,6 +6,7 @@ import { HistoryCalendar } from './HistoryCalendar';
 import type { TabId } from '../types';
 import { useAppStore } from '../store/useAppStore';
 
+// ── MainLayout.tsx ──────────────────────────────────────
 export function MainLayout() {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
   const weatherState = useAppStore((s) => s.weatherState);
@@ -17,6 +18,7 @@ export function MainLayout() {
         style={{
           height: 'calc(100vh - var(--header-height) - var(--bottomnav-height))',
           transition: 'background var(--transition-bg)',
+          overflow: 'hidden',   // ← 여기서 한 번만 overflow 제어
         }}
       >
         {activeTab === 'dashboard' && <Dashboard />}
