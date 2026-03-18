@@ -22,6 +22,7 @@ const selectStyle = (focused: boolean, disabled = false) => ({
 });
 
 type Mode = 'solo' | 'team';
+type TeamMode = 'select' | 'custom';
 
 export function LoginScreen() {
   const login = useAuthStore((s) => s.login);
@@ -48,6 +49,8 @@ export function LoginScreen() {
   const parsed = parseTeamFromUrl(teamFromUrl);
 
   const [mode, setMode] = useState<Mode>(teamFromUrl ? 'team' : 'solo');
+  const [teamMode, setTeamMode] = useState<TeamMode>('select');
+  const [customTeamName, setCustomTeamName] = useState('');
   const [name, setName] = useState('');
   const [selectedBH, setSelectedBH] = useState(parsed.bh);
   const [isCustomBH, setIsCustomBH] = useState(false);
@@ -69,6 +72,8 @@ export function LoginScreen() {
 
   const handleModeChange = (m: Mode) => {
     setMode(m);
+    setTeamMode('select');
+    setCustomTeamName('');
     setSelectedBH(''); setIsCustomBH(false); setCustomBH('');
     setSelectedUnit(''); setSelectedTeam('');
   };
@@ -77,6 +82,11 @@ export function LoginScreen() {
     e.preventDefault();
     if (!name.trim()) return;
     if (mode === 'solo') { login(name.trim(), ''); return; }
+    if (teamMode === 'custom') {
+      if (!customTeamName.trim()) return;
+      login(name.trim(), customTeamName.trim());
+      return;
+    }
     const finalBH = isCustomBH ? customBH.trim() : selectedBH;
     if (!finalBH) return;
     if (!isCustomBH && !selectedTeam) return;
@@ -85,7 +95,11 @@ export function LoginScreen() {
   };
 
   const finalBH = isCustomBH ? customBH.trim() : selectedBH;
-  const canSubmit = name.trim() && (mode === 'solo' || (finalBH && (isCustomBH || selectedTeam)));
+  const canSubmit = name.trim() && (
+    mode === 'solo' ||
+    (teamMode === 'custom' && customTeamName.trim()) ||
+    (teamMode === 'select' && finalBH && (isCustomBH || selectedTeam))
+  );
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 weather-sunny">
@@ -120,7 +134,6 @@ export function LoginScreen() {
           {/* 입력 박스 */}
           <div className="flex flex-col gap-4 p-4 rounded-xl" style={{ background: 'rgba(0,0,0,0.04)', border: '1px solid rgba(0,0,0,0.08)' }}>
 
-            {/* 팀 선택 — 애니메이션 */}
             <AnimatePresence mode="wait">
               {mode === 'team' && (
                 <motion.div
@@ -131,66 +144,102 @@ export function LoginScreen() {
                   transition={{ duration: 0.2, ease: 'easeInOut' }}
                   className="flex flex-col gap-4"
                 >
-                  {/* 본부 + 유닛 */}
-                  <div className="flex flex-col gap-1.5">
-                    <span className="text-sm font-medium text-text-primary">본부 · 유닛</span>
-                    {!isCustomBH ? (
-                      <div className="flex gap-2">
-                        <select value={selectedBH} onChange={handleBHChange}
-                          onFocus={() => setFocused('bh')} onBlur={() => setFocused(null)}
-                          className="flex-1 px-3 py-3 rounded-md bg-white transition-all duration-150 appearance-none"
-                          style={selectStyle(focused === 'bh')}>
-                          <option value="" disabled>본부</option>
-                          {ORG.map((o) => <option key={o.본부} value={o.본부}>{o.본부}</option>)}
-                          <option value="__custom__">✏️ 직접 입력...</option>
-                        </select>
-                        <select value={selectedUnit}
-                          onChange={(e) => { setSelectedUnit(e.target.value); setSelectedTeam(''); }}
-                          onFocus={() => setFocused('unit')} onBlur={() => setFocused(null)}
-                          disabled={!showUnitSelect}
-                          className="flex-1 px-3 py-3 rounded-md bg-white transition-all duration-150 appearance-none"
-                          style={selectStyle(focused === 'unit', !showUnitSelect)}>
-                          <option value="" disabled>{!selectedBH ? '유닛' : !showUnitSelect ? '해당 없음' : '유닛'}</option>
-                          {unitList.map((u) => <option key={u.유닛명!} value={u.유닛명!}>{u.유닛명}</option>)}
-                        </select>
-                      </div>
-                    ) : (
-                      <div className="flex gap-2">
-                        <input type="text" value={customBH} onChange={(e) => setCustomBH(e.target.value)}
-                          onFocus={() => setFocused('customBH')} onBlur={() => setFocused(null)}
-                          placeholder="본부명을 입력하세요" autoFocus
-                          className="flex-1 px-4 py-3 rounded-md bg-white transition-all duration-150"
-                          style={inputStyle(focused === 'customBH')} />
-                        <button type="button" onClick={() => { setIsCustomBH(false); setSelectedBH(''); }}
-                          className="px-3 py-2 rounded-md text-sm transition-all text-text-secondary"
-                          style={{ background: 'rgba(0,0,0,0.07)' }}>
-                          취소
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  <AnimatePresence mode="wait">
+                    {teamMode === 'select' ? (
+                      <motion.div key="select" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-4">
+                        {/* 본부 + 유닛 */}
+                        <div className="flex flex-col gap-1.5">
+                          <span className="text-sm font-medium text-text-primary">본부 · 유닛</span>
+                          {!isCustomBH ? (
+                            <div className="flex gap-2">
+                              <select value={selectedBH} onChange={handleBHChange}
+                                onFocus={() => setFocused('bh')} onBlur={() => setFocused(null)}
+                                className="flex-1 px-3 py-3 rounded-md bg-white transition-all duration-150 appearance-none"
+                                style={selectStyle(focused === 'bh')}>
+                                <option value="" disabled>본부</option>
+                                {ORG.map((o) => <option key={o.본부} value={o.본부}>{o.본부}</option>)}
+                                <option value="__custom__">✏️ 직접 입력...</option>
+                              </select>
+                              <select value={selectedUnit}
+                                onChange={(e) => { setSelectedUnit(e.target.value); setSelectedTeam(''); }}
+                                onFocus={() => setFocused('unit')} onBlur={() => setFocused(null)}
+                                disabled={!showUnitSelect}
+                                className="flex-1 px-3 py-3 rounded-md bg-white transition-all duration-150 appearance-none"
+                                style={selectStyle(focused === 'unit', !showUnitSelect)}>
+                                <option value="" disabled>{!selectedBH ? '유닛' : !showUnitSelect ? '해당 없음' : '유닛'}</option>
+                                {unitList.map((u) => <option key={u.유닛명!} value={u.유닛명!}>{u.유닛명}</option>)}
+                              </select>
+                            </div>
+                          ) : (
+                            <div className="flex gap-2">
+                              <input type="text" value={customBH} onChange={(e) => setCustomBH(e.target.value)}
+                                onFocus={() => setFocused('customBH')} onBlur={() => setFocused(null)}
+                                placeholder="본부명을 입력하세요" autoFocus
+                                className="flex-1 px-4 py-3 rounded-md bg-white transition-all duration-150"
+                                style={inputStyle(focused === 'customBH')} />
+                              <button type="button" onClick={() => { setIsCustomBH(false); setSelectedBH(''); }}
+                                className="px-3 py-2 rounded-md text-sm transition-all text-text-secondary"
+                                style={{ background: 'rgba(0,0,0,0.07)' }}>
+                                취소
+                              </button>
+                            </div>
+                          )}
+                        </div>
 
-                  {/* 팀 */}
-                  {!isCustomBH && (
-                    <label className="flex flex-col gap-1.5">
-                      <span className="text-sm font-medium text-text-primary" style={{ opacity: teamList.length > 0 ? 1 : 0.4 }}>팀</span>
-                      <select value={selectedTeam} onChange={(e) => setSelectedTeam(e.target.value)}
-                        onFocus={() => setFocused('team')} onBlur={() => setFocused(null)}
-                        disabled={teamList.length === 0}
-                        className="w-full px-4 py-3 rounded-md bg-white transition-all duration-150 appearance-none"
-                        style={selectStyle(focused === 'team', teamList.length === 0)}>
-                        <option value="" disabled>
-                          {!selectedBH ? '본부를 먼저 선택하세요' : showUnitSelect && !selectedUnit ? '유닛을 먼저 선택하세요' : '팀을 선택하세요'}
-                        </option>
-                        {teamList.map((t) => <option key={t} value={t}>{t}</option>)}
-                      </select>
-                    </label>
-                  )}
+                        {/* 팀 */}
+                        {!isCustomBH && (
+                          <label className="flex flex-col gap-1.5">
+                            <span className="text-sm font-medium text-text-primary" style={{ opacity: teamList.length > 0 ? 1 : 0.4 }}>팀</span>
+                            <select value={selectedTeam} onChange={(e) => setSelectedTeam(e.target.value)}
+                              onFocus={() => setFocused('team')} onBlur={() => setFocused(null)}
+                              disabled={teamList.length === 0}
+                              className="w-full px-4 py-3 rounded-md bg-white transition-all duration-150 appearance-none"
+                              style={selectStyle(focused === 'team', teamList.length === 0)}>
+                              <option value="" disabled>
+                                {!selectedBH ? '본부를 먼저 선택하세요' : showUnitSelect && !selectedUnit ? '유닛을 먼저 선택하세요' : '팀을 선택하세요'}
+                              </option>
+                              {teamList.map((t) => <option key={t} value={t}>{t}</option>)}
+                            </select>
+                          </label>
+                        )}
+
+                        {/* 원하는 팀 만들기 버튼 */}
+                        <button type="button" onClick={() => setTeamMode('custom')}
+                          className="text-sm text-center py-2 rounded-lg transition-all text-text-secondary hover:opacity-70"
+                          style={{ background: 'rgba(0,0,0,0.05)' }}>
+                          🏷️ 원하는 팀 만들기
+                        </button>
+                      </motion.div>
+                    ) : (
+                      <motion.div key="custom" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-3">
+                        <div className="flex flex-col gap-1.5">
+                          <span className="text-sm font-medium text-text-primary">팀 이름</span>
+                          <input
+                            type="text"
+                            value={customTeamName}
+                            onChange={(e) => setCustomTeamName(e.target.value)}
+                            onFocus={() => setFocused('customTeam')}
+                            onBlur={() => setFocused(null)}
+                            placeholder="예) 본부장실, 크로스팀..."
+                            autoFocus
+                            className="w-full px-4 py-3 rounded-md bg-white transition-all duration-150"
+                            style={inputStyle(focused === 'customTeam')}
+                          />
+                          <p className="text-xs text-text-muted">💡 같은 이름을 입력하면 함께 참여할 수 있어요</p>
+                        </div>
+                        <button type="button" onClick={() => { setTeamMode('select'); setCustomTeamName(''); }}
+                          className="text-sm text-center py-2 rounded-lg transition-all text-text-secondary hover:opacity-70"
+                          style={{ background: 'rgba(0,0,0,0.05)' }}>
+                          ← 목록에서 선택하기
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {/* 이름 — 항상 박스 안에 */}
+            {/* 이름 */}
             <label className="flex flex-col gap-1.5">
               <span className="text-sm font-medium text-text-primary">이름</span>
               <input type="text" value={name} onChange={(e) => setName(e.target.value)}
@@ -200,7 +249,6 @@ export function LoginScreen() {
                 style={inputStyle(focused === 'name')}
                 required autoComplete="name" />
             </label>
-
           </div>
 
           {/* CTA */}
