@@ -44,7 +44,7 @@ export function MainLayout({ onWeatherChange }: MainLayoutProps) {
         style={{
           height: 'calc(100vh - var(--header-height) - var(--bottomnav-height))',
           transition: 'background var(--transition-bg)',
-          overflow: 'hidden',
+          overflowY: activeTab === 'team' ? 'auto' : 'hidden',
         }}
       >
         {activeTab === 'dashboard' && <Dashboard />}
