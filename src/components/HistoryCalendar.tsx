@@ -6,8 +6,9 @@ import { useAuthStore } from '../store/useAuthStore';
 import { fetchReactionsForUser } from '../utils/reactions';
 import { supabase } from '../lib/supabase';
 import type { WeatherState } from '../types';
+import { getLocalToday } from '../utils/hp';
 
-function getTodayKey() { return new Date().toISOString().slice(0, 10); }
+function getTodayKey() { return getLocalToday(); }
 
 const WEATHER_EMOJI: Record<string, string> = {
   sunny: '☀️', cloudy_sunny: '⛅', cloudy: '☁️',
@@ -117,7 +118,7 @@ export function HistoryCalendar({ onWeatherChange }: { onWeatherChange?: (w: Wea
 
   useEffect(() => {
     if (!userName) return;
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getLocalToday();
     supabase
       .from('user_status')
       .select('missions, last_active_date')

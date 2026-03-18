@@ -1,11 +1,11 @@
 import { create } from 'zustand';
 import type { EventLog, WeatherState, SurvivalGrade } from '../types';
-import { getWeatherState, getSurvivalGrade, clampHp } from '../utils/hp';
+import { getWeatherState, getSurvivalGrade, clampHp, getLocalToday } from '../utils/hp';
 import { getState as getLocalState, saveDayToHistory, getAuth } from '../utils/storage';
 import { supabase } from '../lib/supabase';
 
 function getToday(): string {
-  return new Date().toISOString().slice(0, 10);
+  return getLocalToday();
 }
 
 async function syncToSupabase(patch: {

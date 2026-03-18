@@ -101,3 +101,12 @@ export function getGradeMeta(grade: SurvivalGrade) {
 export function clampHp(value: number): number {
   return Math.min(100, Math.max(0, Math.round(value)));
 }
+
+/** 로컬 타임존 기준 오늘 날짜를 "YYYY-MM-DD" 형식으로 반환 */
+export function getLocalToday(): string {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { useAuthStore } from '../store/useAuthStore';
+import { getLocalToday } from '../utils/hp';
 import { WeatherCard } from './WeatherCard';
 import { HPGauge } from './HPGauge';
 import { EventPanel } from './EventPanel';
@@ -231,7 +232,7 @@ function Checklist() {
       setLoading(false);
       return;
     }
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getLocalToday();
 
     supabase
       .from('user_status')
@@ -255,7 +256,7 @@ function Checklist() {
     setItems(updated);
     if (userName) saveMissionsToSupabase(updated, userName, team);
     // 히스토리 저장 (로컬 히스토리용으로만 유지)
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getLocalToday();
     const history = JSON.parse(localStorage.getItem('survive-office-history') ?? '{}');
     if (history[today]) {
       history[today].missions = updated.map((i) => ({ text: i.text, done: i.done }));
