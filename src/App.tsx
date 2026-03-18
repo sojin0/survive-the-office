@@ -63,11 +63,11 @@ function App() {
 
       <div className="relative z-10 flex flex-col" style={{ height: '100vh' }}>
         <AppHeader />
-        <div className="flex-1 min-h-0 overflow-hidden">
-          {showDashboard
-            ? <MainLayout onWeatherChange={setDisplayWeather} />
-            : <SurvivalResult />}
-        </div>
+        <div className={`flex-1 min-h-0 ${showDashboard ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+    {showDashboard
+    ? <MainLayout onWeatherChange={setDisplayWeather} />
+    : <SurvivalResult />}
+</div>
       </div>
 
       {/* 퇴근하기 버튼 — 모바일 전용 */}
