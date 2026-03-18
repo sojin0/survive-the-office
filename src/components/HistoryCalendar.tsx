@@ -112,19 +112,29 @@ export function HistoryCalendar({ onWeatherChange }: { onWeatherChange?: (w: Wea
     return () => { supabase.removeChannel(channel); };
   }, [userName, team]);
 
-  const checklistItems = (() => {
-    try {
-      const savedDate = localStorage.getItem('checklist_date_v1');
-      const today = new Date().toISOString().slice(0, 10);
-      if (savedDate !== today) return [];
-      return JSON.parse(localStorage.getItem('checklist_v1') ?? '[]');
-    } catch { return []; }
-  })();
+  // ✅ Supabase에서 직접 가져오도록 교체
+  const [todayMissions, setTodayMissions] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!userName) return;
+    const today = new Date().toISOString().slice(0, 10);
+    supabase
+      .from('user_status')
+      .select('missions, last_active_date')
+      .eq('user_name', userName)
+      .eq('team', team)
+      .then(({ data }) => {
+        const row = data?.[0];
+        if (Array.isArray(row?.missions) && row.last_active_date === today) {
+          setTodayMissions(row.missions);
+        }
+      });
+  }, [userName, team]);
 
   const todayData = {
     date: todayKey, hp, minHp, eventLog, weatherState,
     survivalGrade: survivalGrade ?? '',
-    missions: checklistItems,
+    missions: todayMissions,
     reactions: todayReactions,
   };
 
