@@ -227,7 +227,10 @@ function Checklist() {
 
   // 앱 시작 시 Supabase에서만 불러오기
   useEffect(() => {
-    if (!userName || !team) return;
+    if (!userName || !team) {
+      setLoading(false); // userName/team 없으면 그냥 빈 상태로
+      return;
+    }
     const today = new Date().toISOString().slice(0, 10);
 
     supabase
@@ -346,7 +349,6 @@ function Checklist() {
     </div>
   );
 }
-
 // ── Dashboard ───────────────────────────────────────────
 export function Dashboard() {
   return (
