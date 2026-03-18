@@ -17,6 +17,7 @@ async function syncToSupabase(patch: {
   survival_grade?: string;
   event_log?: EventLog[];
   last_active_date?: string;
+  missions?: unknown[];
 }) {
   const auth = getAuth();
   if (!auth?.userName) return;
@@ -131,7 +132,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       survivalGrade: null, minHp: INITIAL_HP, oneLiner: INITIAL_ONE_LINER,
     });
     saveDayToHistory({ date: today, hp: INITIAL_HP, minHp: INITIAL_HP, eventLog: [], weatherState: 'sunny', survivalGrade: '' });
-    syncToSupabase({ hp: INITIAL_HP, min_hp: INITIAL_HP, weather_state: 'sunny', one_liner: INITIAL_ONE_LINER, is_retired: false, survival_grade: '', event_log: [], last_active_date: today });
+    syncToSupabase({ hp: INITIAL_HP, min_hp: INITIAL_HP, weather_state: 'sunny', one_liner: INITIAL_ONE_LINER, is_retired: false, survival_grade: '', event_log: [], missions: [], last_active_date: today });
   },
 
   unretire() {
