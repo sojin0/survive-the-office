@@ -17,7 +17,6 @@ function App() {
   const isRetired = useAppStore((s) => s.isRetired);
   const isViewingDashboard = useAppStore((s) => s.isViewingDashboard);
   const myWeatherState = useAppStore((s) => s.weatherState);
-  const hydrate = useAppStore((s) => s.hydrate);
   const retire = useAppStore((s) => s.retire);
   const hp = useAppStore((s) => s.hp);
   const unretire = useAppStore((s) => s.unretire);
