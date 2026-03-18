@@ -210,7 +210,7 @@ type CheckItem = { id: string; text: string; done: boolean };
 const CHECKLIST_KEY = 'checklist_v1';
 const CHECKLIST_DATE_KEY = 'checklist_date_v1';
 
-function loadChecklist(): CheckItem[] {
+function loadChecklistLocal(): CheckItem[] {
   try {
     const savedDate = localStorage.getItem(CHECKLIST_DATE_KEY);
     const today = new Date().toISOString().slice(0, 10);
@@ -225,16 +225,53 @@ function loadChecklist(): CheckItem[] {
   }
 }
 
+async function saveMissionsToSupabase(missions: CheckItem[], userName: string, team: string) {
+  await supabase
+    .from('user_status')
+    .update({ missions, updated_at: new Date().toISOString() })
+    .eq('user_name', userName)
+    .eq('team', team);
+}
+
 function Checklist() {
-  const [items, setItems] = useState<CheckItem[]>(loadChecklist);
+  const [items, setItems] = useState<CheckItem[]>(loadChecklistLocal);
   const [input, setInput] = useState('');
+  const [loaded, setLoaded] = useState(false);
   const addEvent = useAppStore((s) => s.addEvent);
   const isRetired = useAppStore((s) => s.isRetired);
+  const userName = useAuthStore((s) => s.userName);
+  const team = useAuthStore((s) => s.team);
+
+  // 앱 시작 시 Supabase에서 불러오기
+  useEffect(() => {
+    if (!userName || !team || loaded) return;
+    const today = new Date().toISOString().slice(0, 10);
+
+    supabase
+      .from('user_status')
+      .select('missions, last_active_date')
+      .eq('user_name', userName)
+      .eq('team', team)
+      .single()
+      .then(({ data }) => {
+        if (data?.last_active_date === today && Array.isArray(data.missions) && data.missions.length > 0) {
+          // Supabase 데이터 우선
+          setItems(data.missions as CheckItem[]);
+          localStorage.setItem(CHECKLIST_KEY, JSON.stringify(data.missions));
+          localStorage.setItem(CHECKLIST_DATE_KEY, today);
+        }
+        setLoaded(true);
+      });
+  }, [userName, team, loaded]);
 
   const save = (updated: CheckItem[]) => {
     setItems(updated);
+    // localStorage 저장
     localStorage.setItem(CHECKLIST_KEY, JSON.stringify(updated));
     localStorage.setItem(CHECKLIST_DATE_KEY, new Date().toISOString().slice(0, 10));
+    // Supabase 저장
+    if (userName && team) saveMissionsToSupabase(updated, userName, team);
+    // 히스토리 저장
     const today = new Date().toISOString().slice(0, 10);
     const history = JSON.parse(localStorage.getItem('survive-office-history') ?? '{}');
     if (history[today]) {
@@ -274,7 +311,6 @@ function Checklist() {
         )}
       </div>
 
-      {/* 좁을 때 버튼이 아래로 내려가도록 flex-wrap */}
       <div className="flex flex-wrap gap-2">
         <input type="text" value={input} onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && !isRetired && addItem()}
