@@ -181,21 +181,31 @@ export function HistoryCalendar() {
               }} />
           </div>
 
-          {/* 팀원 응원 */}
-          {selectedRecord.reactions && selectedRecord.reactions.length > 0 && (
-            <div className="pt-4" style={{ borderTop: '1px solid var(--color-border)' }}>
-              <p className="text-xs font-semibold mb-3 text-text-muted">팀원 응원 🎉</p>
-              <div className="flex flex-wrap gap-2">
-                {selectedRecord.reactions.map(({ emoji, count }: { emoji: string; count: number }) => (
-                  <div key={emoji} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm text-text-secondary"
-                    style={{ background: 'rgba(0,0,0,0.06)' }}>
-                    <span>{emoji}</span>
-                    <span className="text-xs font-medium tabular-nums">{count}</span>
-                  </div>
+          {/* 이벤트 기록 */}
+          <div className="pt-4" style={{ borderTop: '1px solid var(--color-border)' }}>
+            <p className="text-xs font-semibold mb-3 text-text-muted">
+              오늘의 기록 ({selectedRecord.eventLog.length}건)
+            </p>
+            {selectedRecord.eventLog.length === 0 ? (
+              <p className="text-sm text-text-muted">기록된 이벤트가 없어요</p>
+            ) : (
+              <ul className="flex flex-col gap-2">
+                {selectedRecord.eventLog.map((log: any) => (
+                  <li key={log.id} className="flex items-center gap-2 text-sm">
+                    <span className="tabular-nums shrink-0 text-text-muted text-[10px] w-9">{log.timestamp}</span>
+                    <span className="w-2 h-2 rounded-full shrink-0"
+                      style={{ background: log.hpDelta >= 0 ? 'var(--color-text-primary)' : 'var(--color-faint)' }} aria-hidden />
+                    <span aria-hidden>{log.emoji}</span>
+                    <span className="flex-1 truncate text-text-primary">{log.name}</span>
+                    <span className="font-semibold tabular-nums shrink-0"
+                      style={{ color: log.hpDelta >= 0 ? 'var(--color-text-primary)' : 'var(--color-text-muted)' }}>
+                      {log.hpDelta >= 0 ? '+' : ''}{log.hpDelta}
+                    </span>
+                  </li>
                 ))}
-              </div>
-            </div>
-          )}
+              </ul>
+            )}
+          </div>
 
           {/* 오늘의 미션 */}
           {selectedRecord.missions && selectedRecord.missions.length > 0 && (
@@ -219,31 +229,21 @@ export function HistoryCalendar() {
             </div>
           )}
 
-          {/* 이벤트 기록 */}
-          <div className="pt-4" style={{ borderTop: '1px solid var(--color-border)' }}>
-            <p className="text-xs font-semibold mb-3 text-text-muted">
-              이벤트 기록 ({selectedRecord.eventLog.length}건)
-            </p>
-            {selectedRecord.eventLog.length === 0 ? (
-              <p className="text-sm text-text-muted">기록된 이벤트가 없어요</p>
-            ) : (
-              <ul className="flex flex-col gap-2">
-                {selectedRecord.eventLog.map((log: any) => (
-                  <li key={log.id} className="flex items-center gap-2 text-sm">
-                    <span className="tabular-nums shrink-0 text-text-muted text-[10px] w-9">{log.timestamp}</span>
-                    <span className="w-2 h-2 rounded-full shrink-0"
-                      style={{ background: log.hpDelta >= 0 ? 'var(--color-text-primary)' : 'var(--color-faint)' }} aria-hidden />
-                    <span aria-hidden>{log.emoji}</span>
-                    <span className="flex-1 truncate text-text-primary">{log.name}</span>
-                    <span className="font-semibold tabular-nums shrink-0"
-                      style={{ color: log.hpDelta >= 0 ? 'var(--color-text-primary)' : 'var(--color-text-muted)' }}>
-                      {log.hpDelta >= 0 ? '+' : ''}{log.hpDelta}
-                    </span>
-                  </li>
+          {/* 팀원 응원 */}
+          {selectedRecord.reactions && selectedRecord.reactions.length > 0 && (
+            <div className="pt-4" style={{ borderTop: '1px solid var(--color-border)' }}>
+              <p className="text-xs font-semibold mb-3 text-text-muted">팀원 응원 🎉</p>
+              <div className="flex flex-wrap gap-2">
+                {selectedRecord.reactions.map(({ emoji, count }: { emoji: string; count: number }) => (
+                  <div key={emoji} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm text-text-secondary"
+                    style={{ background: 'rgba(0,0,0,0.06)' }}>
+                    <span>{emoji}</span>
+                    <span className="text-xs font-medium tabular-nums">{count}</span>
+                  </div>
                 ))}
-              </ul>
-            )}
-          </div>
+              </div>
+            </div>
+          )}
         </motion.div>
       )}
     </AnimatePresence>
