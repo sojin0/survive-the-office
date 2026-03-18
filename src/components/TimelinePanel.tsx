@@ -77,6 +77,7 @@ export function TimelinePanel() {
   const removeEvent = useAppStore((s) => s.removeEvent);
   const resetDay = useAppStore((s) => s.resetDay);
   const retire = useAppStore((s) => s.retire);
+  const unretire = useAppStore((s) => s.unretire);
   const isRetired = useAppStore((s) => s.isRetired);
   const isViewingDashboard = useAppStore((s) => s.isViewingDashboard);
   const weatherState = useAppStore((s) => s.weatherState);
@@ -88,6 +89,7 @@ export function TimelinePanel() {
   const isReadOnly = isRetired || isViewingDashboard;
 
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+  const [showUnretireConfirm, setShowUnretireConfirm] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
   const [showRetireConfirm, setShowRetireConfirm] = useState(false);
 
@@ -126,6 +128,12 @@ export function TimelinePanel() {
       <div className="flex items-center justify-between shrink-0 px-4"
         style={{ borderBottom: '1px solid var(--color-border)', paddingTop: 14, paddingBottom: 14 }}>
         <h3 className="text-sm font-semibold text-text-primary">오늘의 기록</h3>
+        {isRetired && (
+          <span className="text-xs px-2.5 py-1 rounded-full font-medium"
+            style={{ background: 'var(--color-btn-primary-bg)', color: 'var(--color-btn-primary-text)' }}>
+            🌙 오늘 퇴근 완료
+          </span>
+        )}
         <AnimatePresence>
           {eventLog.length > 0 && !isReadOnly && !isRetired && (
             <motion.button type="button" onClick={handleClearAll}
@@ -212,18 +220,41 @@ export function TimelinePanel() {
         </AnimatePresence>
         {!showRetireConfirm && (
           <div className="px-3 pt-3 pb-4" style={{ borderTop: '1px solid var(--color-border)' }}>
-            <button type="button"
-              onClick={() => !isRetired && setShowRetireConfirm(true)}
-              disabled={isRetired}
-              className="w-full py-3 rounded-full font-bold text-sm transition-all duration-200 active:scale-[0.98] focus:outline-none disabled:cursor-not-allowed"
-              style={{
-                background: isRetired ? 'rgba(0,0,0,0.08)' : 'var(--color-btn-primary-bg)',
-                color: isRetired ? 'var(--color-text-muted)' : 'var(--color-btn-primary-text)',
-                boxShadow: isRetired ? 'none' : '0 4px 20px rgba(0,0,0,0.15)',
-              }}
-              data-testid="btn-checkout">
-              {isRetired ? '🌙 오늘 퇴근 완료!' : '🚪 퇴근하기'}
-            </button>
+            {isRetired ? (
+              showUnretireConfirm ? (
+                <div className="flex flex-col gap-2">
+                  <p className="text-xs text-center text-text-muted">퇴근을 취소할까요?</p>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => { unretire(); setShowUnretireConfirm(false); }}
+                      className="flex-1 py-2 rounded-full text-sm font-bold transition-all active:scale-[0.98]"
+                      style={{ background: 'var(--color-btn-primary-bg)', color: 'var(--color-btn-primary-text)' }}>
+                      취소할게요
+                    </button>
+                    <button type="button" onClick={() => setShowUnretireConfirm(false)}
+                      className="flex-1 py-2 rounded-full text-sm transition-all active:scale-[0.98] text-text-secondary"
+                      style={{ background: 'rgba(0,0,0,0.06)' }}>
+                      그냥 퇴근!
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-1">
+                  <button type="button" onClick={() => setShowUnretireConfirm(true)}
+                    className="w-full py-3 rounded-full font-bold text-sm transition-all duration-200 active:scale-[0.98] focus:outline-none"
+                    style={{ background: 'rgba(0,0,0,0.08)', color: 'var(--color-text-muted)' }}
+                    data-testid="btn-checkout">
+                    😢 퇴근 번복하기
+                  </button>
+                </div>
+              )
+            ) : (
+              <button type="button" onClick={() => setShowRetireConfirm(true)}
+                className="w-full py-3 rounded-full font-bold text-sm transition-all duration-200 active:scale-[0.98] focus:outline-none"
+                style={{ background: 'var(--color-btn-primary-bg)', color: 'var(--color-btn-primary-text)', boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}
+                data-testid="btn-checkout">
+                🚪 퇴근하기
+              </button>
+            )}
           </div>
         )}
       </div>

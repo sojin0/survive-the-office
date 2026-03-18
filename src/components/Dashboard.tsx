@@ -235,6 +235,13 @@ function Checklist() {
     setItems(updated);
     localStorage.setItem(CHECKLIST_KEY, JSON.stringify(updated));
     localStorage.setItem(CHECKLIST_DATE_KEY, new Date().toISOString().slice(0, 10));
+    // 히스토리에 미션 저장
+    const today = new Date().toISOString().slice(0, 10);
+    const history = JSON.parse(localStorage.getItem('survive-office-history') ?? '{}');
+    if (history[today]) {
+      history[today].missions = updated.map((i) => ({ text: i.text, done: i.done }));
+      localStorage.setItem('survive-office-history', JSON.stringify(history));
+    }
   };
 
   const addItem = () => {
@@ -270,13 +277,15 @@ function Checklist() {
 
       <div className="flex gap-2">
         <input type="text" value={input} onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && addItem()}
-          placeholder="할 일 추가..."
-          className="flex-1 px-3 py-1.5 rounded-md text-sm focus:outline-none"
+          onKeyDown={(e) => e.key === 'Enter' && !isRetired && addItem()}
+          placeholder={isRetired ? '퇴근 후에는 추가할 수 없어요' : '할 일 추가...'}
+          disabled={isRetired}
+          className="flex-1 px-3 py-1.5 rounded-md text-sm focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
           style={{ background: 'var(--color-surface-strong)', border: '1px solid rgba(0,0,0,0.12)', color: 'var(--color-text-primary)' }} />
         <button type="button" onClick={addItem}
-          className="px-3 py-1.5 rounded-md text-sm font-medium"
-          style={{ background: 'var(--color-btn-primary-bg)', color: 'var(--color-btn-primary-text)', opacity: input.trim() ? 1 : 0.4 }}>
+          disabled={isRetired}
+          className="px-3 py-1.5 rounded-md text-sm font-medium disabled:cursor-not-allowed"
+          style={{ background: 'var(--color-btn-primary-bg)', color: 'var(--color-btn-primary-text)', opacity: input.trim() && !isRetired ? 1 : 0.4 }}>
           추가
         </button>
       </div>
@@ -290,18 +299,21 @@ function Checklist() {
         <ul className="flex flex-col gap-1">
           {items.map((item) => (
             <li key={item.id} className="flex items-center gap-2 group px-1 py-0.5 rounded-md hover:bg-black/[0.03]">
-              <button type="button" onClick={() => toggle(item.id)}
-                className="w-4 h-4 shrink-0 rounded flex items-center justify-center transition-all"
+              <button type="button" onClick={() => !isRetired && toggle(item.id)}
+                disabled={isRetired}
+                className="w-4 h-4 shrink-0 rounded flex items-center justify-center transition-all disabled:cursor-not-allowed"
                 style={{ border: item.done ? 'none' : '1.5px solid rgba(0,0,0,0.25)', background: item.done ? 'var(--color-btn-primary-bg)' : 'transparent' }}>
                 {item.done && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l3 3 5-6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
               </button>
               <span className="flex-1 text-sm text-text-primary" style={{ textDecoration: item.done ? 'line-through' : 'none', opacity: item.done ? 0.45 : 1 }}>
                 {item.text}
               </span>
-              <button type="button" onClick={() => remove(item.id)}
-                className="opacity-0 group-hover:opacity-50 hover:!opacity-100 transition-opacity text-text-muted text-xs w-4 h-4 flex items-center justify-center">
-                ×
-              </button>
+              {!isRetired && (
+                <button type="button" onClick={() => remove(item.id)}
+                  className="opacity-0 group-hover:opacity-50 hover:!opacity-100 transition-opacity text-text-muted text-xs w-4 h-4 flex items-center justify-center">
+                  ×
+                </button>
+              )}
             </li>
           ))}
         </ul>

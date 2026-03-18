@@ -37,6 +37,7 @@ type AppStore = {
   retire: () => void;
   viewDashboard: () => void;
   resetDay: () => void;
+  unretire: () => void;
   hydrate: () => void;
 };
 
@@ -140,6 +141,15 @@ export const useAppStore = create<AppStore>((set, get) => ({
       eventLog: [], weatherState: 'sunny', survivalGrade: '',
     });
     syncToSupabase({ hp: INITIAL_HP, weather_state: 'sunny', one_liner: INITIAL_ONE_LINER });
+  },
+
+  unretire() {
+    const today = getToday();
+    const saved = getState();
+    set({ isRetired: false, survivalGrade: null });
+    if (saved) {
+      setState({ ...saved, isRetired: false, survivalGrade: null, date: today });
+    }
   },
 
   hydrate() {
