@@ -7,6 +7,7 @@ import { AppHeader } from './components/AppHeader';
 import { MainLayout } from './components/MainLayout';
 import { SurvivalResult } from './components/SurvivalResult';
 import { RetireConfirmModal } from './components/TimelinePanel';
+import type { WeatherState } from './types';
 import './styles/weather-bg.css';
 
 const WEATHER_IDS = ['sunny', 'cloudy_sunny', 'cloudy', 'rainy', 'stormy', 'dead'] as const;
@@ -15,20 +16,26 @@ function App() {
   const userName = useAuthStore((s) => s.userName);
   const isRetired = useAppStore((s) => s.isRetired);
   const isViewingDashboard = useAppStore((s) => s.isViewingDashboard);
-  const weatherState = useAppStore((s) => s.weatherState);
+  const myWeatherState = useAppStore((s) => s.weatherState);
   const hydrate = useAppStore((s) => s.hydrate);
   const retire = useAppStore((s) => s.retire);
   const hp = useAppStore((s) => s.hp);
-
   const unretire = useAppStore((s) => s.unretire);
+
+  // 현재 표시할 날씨 (탭에 따라 MainLayout이 업데이트)
+  const [displayWeather, setDisplayWeather] = useState<WeatherState>(myWeatherState);
+
   const [showRetireConfirm, setShowRetireConfirm] = useState(false);
   const [showUnretireConfirm, setShowUnretireConfirm] = useState(false);
 
   useEffect(() => { useAuthStore.getState().hydrate(); }, []);
   useEffect(() => { hydrate(); }, [hydrate]);
 
+  // 내 날씨가 바뀌면 displayWeather도 동기화
+  useEffect(() => { setDisplayWeather(myWeatherState); }, [myWeatherState]);
+
   const isLoggedIn = userName.length > 0;
-  const isDarkWeather = weatherState === 'stormy' || weatherState === 'dead';
+  const isDarkWeather = displayWeather === 'stormy' || displayWeather === 'dead';
   const showDashboard = !isRetired || isViewingDashboard;
 
   if (!isLoggedIn) {
@@ -50,7 +57,7 @@ function App() {
           <div
             key={id}
             className={`weather-bg-layer ${id}`}
-            style={{ opacity: weatherState === id ? 1 : 0 }}
+            style={{ opacity: displayWeather === id ? 1 : 0 }}
           />
         ))}
       </div>
@@ -58,7 +65,9 @@ function App() {
       <div className="relative z-10 flex flex-col" style={{ height: '100vh' }}>
         <AppHeader />
         <div className="flex-1 min-h-0 overflow-hidden">
-          {showDashboard ? <MainLayout /> : <SurvivalResult />}
+          {showDashboard
+            ? <MainLayout onWeatherChange={setDisplayWeather} />
+            : <SurvivalResult />}
         </div>
       </div>
 

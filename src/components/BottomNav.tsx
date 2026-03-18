@@ -14,7 +14,7 @@ const TABS: { id: TabId; label: string; icon: string }[] = [
 export function BottomNav({ activeTab, onTab }: BottomNavProps) {
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-40 h-[56px] backdrop-blur-md"
+      className="fixed bottom-0 left-0 right-0 z-40 h-[56px] backdrop-blur-md text-[var(--color-text-primary)]"
       style={{
         background: 'var(--color-surface-strong)',
         borderTop: '1px solid var(--color-border)',

@@ -7,7 +7,7 @@ export function AppHeader() {
 
   return (
     <header
-      className="sticky top-0 z-20 flex items-center justify-between gap-4 px-5 bg-[var(--color-surface)] backdrop-blur-md border-b border-[var(--color-border)] h-[var(--header-height)]"
+      className="sticky top-0 z-20 flex items-center justify-between gap-4 px-5 bg-[var(--color-surface)] backdrop-blur-md border-b border-[var(--color-border)] h-[var(--header-height)] text-[var(--color-text-primary)]"
     >
       <h1 className="text-base font-bold text-text-primary truncate">
         오늘 회사에서 살아남기

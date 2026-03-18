@@ -230,6 +230,13 @@ export function TeamBoard({ onWeatherChange }: { onWeatherChange?: (w: WeatherSt
   const userName = useAuthStore((s) => s.userName);
   const userTeam = useAuthStore((s) => s.team);
 
+  // 솔로 모드일 때 내 날씨로 배경 설정
+  useEffect(() => {
+    if (!userTeam) {
+      onWeatherChange?.(myWeather);
+    }
+  }, [userTeam, myWeather, onWeatherChange]);
+
   // 팀원 + 응원 불러오기
   useEffect(() => {
     if (!userTeam) return;
@@ -252,8 +259,6 @@ export function TeamBoard({ onWeatherChange }: { onWeatherChange?: (w: WeatherSt
       }));
       setTeamMembers(members);
 
-      // reactionData는 { [user_name]: { [emoji]: count } }
-      // TeamMemberCard는 member.id 기준으로 조회하므로 id로 키 변환
       const reactionsById: Record<string, Record<string, number>> = {};
       for (const member of members) {
         if (reactionData[member.name]) {
@@ -265,14 +270,12 @@ export function TeamBoard({ onWeatherChange }: { onWeatherChange?: (w: WeatherSt
 
     fetchAll();
 
-    // 팀원 상태 실시간 구독
     const statusChannel = supabase
       .channel('team_status')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'user_status', filter: `team=eq.${userTeam}` },
         () => fetchAll())
       .subscribe();
 
-    // 응원 실시간 구독
     const reactionChannel = supabase
       .channel('team_reactions')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'reactions', filter: `team=eq.${userTeam}` },
@@ -298,15 +301,15 @@ export function TeamBoard({ onWeatherChange }: { onWeatherChange?: (w: WeatherSt
   );
 
   useEffect(() => {
-    onWeatherChange?.(teamWeather);
-  }, [teamWeather, onWeatherChange]);
-  
+    if (userTeam) {
+      onWeatherChange?.(teamWeather);
+    }
+  }, [teamWeather, userTeam, onWeatherChange]);
+
   const setReaction = useCallback(async (toUserId: string, emoji: string) => {
-    // toUserId는 Supabase row id — user_name으로 변환
     const toUserName = teamMembers.find((m) => m.id === toUserId)?.name;
     if (!toUserName) return;
     await sendReaction(userName, toUserName, userTeam, emoji);
-    // 낙관적 업데이트
     setReactionsState((prev) => ({
       ...prev,
       [toUserId]: {
