@@ -227,7 +227,7 @@ function Checklist() {
 
   // 앱 시작 시 Supabase에서만 불러오기
   useEffect(() => {
-    if (!userName || !team) {
+    if (!userName) {
       setLoading(false);
       return;
     }
