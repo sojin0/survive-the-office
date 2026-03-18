@@ -151,7 +151,7 @@ export function LoginScreen() {
                         <div className="flex flex-col gap-1.5">
                           <span className="text-sm font-medium text-text-primary">본부 · 유닛</span>
                           {!isCustomBH ? (
-                            <div className="flex gap-2">
+                           <div className="flex flex-col sm:flex-row gap-2">
                               <select value={selectedBH} onChange={handleBHChange}
                                 onFocus={() => setFocused('bh')} onBlur={() => setFocused(null)}
                                 className="flex-1 px-3 py-3 rounded-md bg-white transition-all duration-150 appearance-none"
