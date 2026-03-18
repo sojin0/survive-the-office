@@ -19,6 +19,8 @@ export type DayRecord = {
   eventLog: PersistedState['eventLog'];
   weatherState: string;
   survivalGrade: string;
+  reactions?: { emoji: string; count: number }[];
+  missions?: { text: string; done: boolean }[];
 };
 
 export type HistoryState = Record<string, DayRecord>;
