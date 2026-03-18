@@ -152,27 +152,65 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const today = getToday();
     const data = await fetchFromSupabase();
 
-    // 오늘 데이터가 없거나 날짜가 다르면 초기화
-    if (!data || data.last_active_date !== today) {
-      get().resetDay();
+    // Supabase에 오늘 데이터가 있으면 그걸 사용
+    if (data && data.last_active_date === today) {
+      const state = {
+        hp: data.hp ?? INITIAL_HP,
+        minHp: data.min_hp ?? INITIAL_HP,
+        eventLog: (data.event_log as EventLog[]) ?? [],
+        isRetired: data.is_retired ?? false,
+        isViewingDashboard: false,
+        survivalGrade: (data.survival_grade as SurvivalGrade) || null,
+        weatherState: getWeatherState(data.hp ?? INITIAL_HP),
+        oneLiner: data.one_liner ?? INITIAL_ONE_LINER,
+      };
+      set(state);
+      saveDayToHistory({
+        date: today, hp: state.hp, minHp: state.minHp,
+        eventLog: state.eventLog, weatherState: state.weatherState,
+        survivalGrade: state.survivalGrade ?? '',
+      });
       return;
     }
 
-    const state = {
-      hp: data.hp ?? INITIAL_HP,
-      minHp: data.min_hp ?? INITIAL_HP,
-      eventLog: (data.event_log as EventLog[]) ?? [],
-      isRetired: data.is_retired ?? false,
-      isViewingDashboard: false,
-      survivalGrade: (data.survival_grade as SurvivalGrade) || null,
-      weatherState: getWeatherState(data.hp ?? INITIAL_HP),
-      oneLiner: data.one_liner ?? INITIAL_ONE_LINER,
-    };
-    set(state);
-    saveDayToHistory({
-      date: today, hp: state.hp, minHp: state.minHp,
-      eventLog: state.eventLog, weatherState: state.weatherState,
-      survivalGrade: state.survivalGrade ?? '',
-    });
+    // Supabase가 비어있으면 localStorage에서 마이그레이션
+    const LOCAL_KEY = 'survive-office-state';
+    try {
+      const raw = localStorage.getItem(LOCAL_KEY);
+      const saved = raw ? JSON.parse(raw) : null;
+      if (saved && saved.date === today) {
+        const state = {
+          hp: saved.hp ?? INITIAL_HP,
+          minHp: saved.minHp ?? INITIAL_HP,
+          eventLog: saved.eventLog ?? [],
+          isRetired: saved.isRetired ?? false,
+          isViewingDashboard: false,
+          survivalGrade: (saved.survivalGrade as SurvivalGrade) || null,
+          weatherState: getWeatherState(saved.hp ?? INITIAL_HP),
+          oneLiner: saved.oneLiner ?? INITIAL_ONE_LINER,
+        };
+        set(state);
+        // localStorage 데이터를 Supabase에 올려줌
+        await syncToSupabase({
+          hp: state.hp,
+          min_hp: state.minHp,
+          weather_state: state.weatherState,
+          one_liner: state.oneLiner,
+          is_retired: state.isRetired,
+          survival_grade: state.survivalGrade ?? '',
+          event_log: state.eventLog,
+          last_active_date: today,
+        });
+        saveDayToHistory({
+          date: today, hp: state.hp, minHp: state.minHp,
+          eventLog: state.eventLog, weatherState: state.weatherState,
+          survivalGrade: state.survivalGrade ?? '',
+        });
+        return;
+      }
+    } catch { /* localStorage 파싱 실패시 무시 */ }
+
+    // 둘 다 없으면 새로 시작
+    get().resetDay();
   },
 }));
