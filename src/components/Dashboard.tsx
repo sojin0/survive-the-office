@@ -227,7 +227,10 @@ function Checklist() {
 
   // 앱 시작 시 Supabase에서만 불러오기
   useEffect(() => {
-    if (!userName || !team) return;
+    if (!userName || !team) {
+      setLoading(false);
+      return;
+    }
     const today = new Date().toISOString().slice(0, 10);
 
     supabase

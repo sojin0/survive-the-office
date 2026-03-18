@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { EventLog, WeatherState, SurvivalGrade } from '../types';
 import { getWeatherState, getSurvivalGrade, clampHp } from '../utils/hp';
-import { saveDayToHistory, getAuth } from '../utils/storage';
+import { getState as getLocalState, saveDayToHistory, getAuth } from '../utils/storage';
 import { supabase } from '../lib/supabase';
 
 function getToday(): string {
@@ -27,16 +27,7 @@ async function syncToSupabase(patch: {
     .eq('team', auth.team ?? '');
 }
 
-async function fetchFromSupabase(): Promise<{
-  hp: number;
-  min_hp: number;
-  weather_state: string;
-  one_liner: string;
-  is_retired: boolean;
-  survival_grade: string;
-  event_log: EventLog[];
-  last_active_date: string;
-} | null> {
+async function fetchFromSupabase() {
   const auth = getAuth();
   if (!auth?.userName) return null;
   const { data } = await supabase
@@ -174,10 +165,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
 
     // Supabase가 비어있으면 localStorage에서 마이그레이션
-    const LOCAL_KEY = 'survive-office-state';
     try {
-      const raw = localStorage.getItem(LOCAL_KEY);
-      const saved = raw ? JSON.parse(raw) : null;
+      const saved = getLocalState();
       if (saved && saved.date === today) {
         const state = {
           hp: saved.hp ?? INITIAL_HP,
@@ -187,10 +176,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
           isViewingDashboard: false,
           survivalGrade: (saved.survivalGrade as SurvivalGrade) || null,
           weatherState: getWeatherState(saved.hp ?? INITIAL_HP),
-          oneLiner: saved.oneLiner ?? INITIAL_ONE_LINER,
+          oneLiner: INITIAL_ONE_LINER,
         };
         set(state);
-        // localStorage 데이터를 Supabase에 올려줌
         await syncToSupabase({
           hp: state.hp,
           min_hp: state.minHp,

@@ -35,7 +35,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
     set({ userName: name, team: teamName });
     setAuth({ userName: name, team: teamName });
     await upsertUserStatus(name, teamName);
-    useAppStore.getState().hydrate();
+    await useAppStore.getState().hydrate();
   },
 
   logout() {
@@ -43,7 +43,12 @@ export const useAuthStore = create<AuthStore>((set) => ({
     clearAuth();
   },
 
-  hydrate() {
-    set(getInitialAuth());
+  async hydrate() {
+    const initial = getInitialAuth();
+    set(initial);
+    // auth가 있으면 appStore hydrate 실행
+    if (initial.userName) {
+      await useAppStore.getState().hydrate();
+    }
   },
 }));

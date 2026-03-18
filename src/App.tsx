@@ -29,7 +29,7 @@ function App() {
   const [showUnretireConfirm, setShowUnretireConfirm] = useState(false);
 
   useEffect(() => { useAuthStore.getState().hydrate(); }, []);
-  useEffect(() => { hydrate(); }, [hydrate]);
+// ✅ hydrate() 단독 호출 제거 — useAuthStore.hydrate()가 대신 호출함
 
   // 내 날씨가 바뀌면 displayWeather도 동기화
   useEffect(() => { setDisplayWeather(myWeatherState); }, [myWeatherState]);
