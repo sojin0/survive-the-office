@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { EventLog, WeatherState, SurvivalGrade } from '../types';
 import { getWeatherState, getSurvivalGrade, clampHp } from '../utils/hp';
-import { getState, setState, saveDayToHistory, getAuth } from '../utils/storage';
+import { saveDayToHistory, getAuth } from '../utils/storage';
 import { supabase } from '../lib/supabase';
 
 function getToday(): string {
@@ -10,8 +10,13 @@ function getToday(): string {
 
 async function syncToSupabase(patch: {
   hp?: number;
+  min_hp?: number;
   weather_state?: string;
   one_liner?: string;
+  is_retired?: boolean;
+  survival_grade?: string;
+  event_log?: EventLog[];
+  last_active_date?: string;
 }) {
   const auth = getAuth();
   if (!auth?.userName) return;
@@ -20,6 +25,27 @@ async function syncToSupabase(patch: {
     .update({ ...patch, updated_at: new Date().toISOString() })
     .eq('user_name', auth.userName)
     .eq('team', auth.team ?? '');
+}
+
+async function fetchFromSupabase(): Promise<{
+  hp: number;
+  min_hp: number;
+  weather_state: string;
+  one_liner: string;
+  is_retired: boolean;
+  survival_grade: string;
+  event_log: EventLog[];
+  last_active_date: string;
+} | null> {
+  const auth = getAuth();
+  if (!auth?.userName) return null;
+  const { data } = await supabase
+    .from('user_status')
+    .select('hp, min_hp, weather_state, one_liner, is_retired, survival_grade, event_log, last_active_date')
+    .eq('user_name', auth.userName)
+    .eq('team', auth.team ?? '')
+    .single();
+  return data ?? null;
 }
 
 type AppStore = {
@@ -64,17 +90,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const autoOneLiner = log.hpDelta >= 0
       ? `${log.emoji} ${log.name} 완료!`
       : `${log.emoji} ${log.name}... 힘들다`;
-    set({ hp: newHp, minHp: newMin, eventLog: nextLog, weatherState, oneLiner: autoOneLiner });
     const today = getToday();
-    setState({
-      hp: newHp, minHp: newMin, eventLog: nextLog,
-      isRetired: get().isRetired, survivalGrade: get().survivalGrade, date: today,
-    });
-    saveDayToHistory({
-      date: today, hp: newHp, minHp: newMin,
-      eventLog: nextLog, weatherState, survivalGrade: get().survivalGrade ?? '',
-    });
-    syncToSupabase({ hp: newHp, weather_state: weatherState, one_liner: autoOneLiner });
+    set({ hp: newHp, minHp: newMin, eventLog: nextLog, weatherState, oneLiner: autoOneLiner });
+    saveDayToHistory({ date: today, hp: newHp, minHp: newMin, eventLog: nextLog, weatherState, survivalGrade: get().survivalGrade ?? '' });
+    syncToSupabase({ hp: newHp, min_hp: newMin, weather_state: weatherState, one_liner: autoOneLiner, event_log: nextLog, last_active_date: today });
   },
 
   removeEvent(id) {
@@ -82,9 +101,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const target = eventLog.find((l) => l.id === id);
     if (!target) return;
     const nextLog = eventLog.filter((l) => l.id !== id);
-    const newHp = clampHp(
-      nextLog.reduceRight((acc, l) => acc + l.hpDelta, INITIAL_HP)
-    );
+    const newHp = clampHp(nextLog.reduceRight((acc, l) => acc + l.hpDelta, INITIAL_HP));
     const newMin = nextLog.length === 0
       ? INITIAL_HP
       : Math.min(...nextLog.map((_, i) =>
@@ -93,15 +110,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const weatherState = getWeatherState(newHp);
     const today = getToday();
     set({ hp: newHp, minHp: newMin, eventLog: nextLog, weatherState });
-    setState({
-      hp: newHp, minHp: newMin, eventLog: nextLog,
-      isRetired: get().isRetired, survivalGrade: get().survivalGrade, date: today,
-    });
-    saveDayToHistory({
-      date: today, hp: newHp, minHp: newMin,
-      eventLog: nextLog, weatherState, survivalGrade: get().survivalGrade ?? '',
-    });
-    syncToSupabase({ hp: newHp, weather_state: weatherState });
+    saveDayToHistory({ date: today, hp: newHp, minHp: newMin, eventLog: nextLog, weatherState, survivalGrade: get().survivalGrade ?? '' });
+    syncToSupabase({ hp: newHp, min_hp: newMin, weather_state: weatherState, event_log: nextLog, last_active_date: today });
   },
 
   setOneLiner(text) {
@@ -114,11 +124,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const grade = getSurvivalGrade(hp);
     const today = getToday();
     set({ isRetired: true, isViewingDashboard: false, survivalGrade: grade });
-    setState({
-      ...getState(), hp, minHp, eventLog,
-      isRetired: true, survivalGrade: grade, date: today,
-    });
     saveDayToHistory({ date: today, hp, minHp, eventLog, weatherState, survivalGrade: grade });
+    syncToSupabase({ is_retired: true, survival_grade: grade });
   },
 
   viewDashboard() {
@@ -132,41 +139,34 @@ export const useAppStore = create<AppStore>((set, get) => ({
       eventLog: [], isRetired: false, isViewingDashboard: false,
       survivalGrade: null, minHp: INITIAL_HP, oneLiner: INITIAL_ONE_LINER,
     });
-    setState({
-      hp: INITIAL_HP, eventLog: [], minHp: INITIAL_HP,
-      isRetired: false, survivalGrade: null, date: today,
-    });
-    saveDayToHistory({
-      date: today, hp: INITIAL_HP, minHp: INITIAL_HP,
-      eventLog: [], weatherState: 'sunny', survivalGrade: '',
-    });
-    syncToSupabase({ hp: INITIAL_HP, weather_state: 'sunny', one_liner: INITIAL_ONE_LINER });
+    saveDayToHistory({ date: today, hp: INITIAL_HP, minHp: INITIAL_HP, eventLog: [], weatherState: 'sunny', survivalGrade: '' });
+    syncToSupabase({ hp: INITIAL_HP, min_hp: INITIAL_HP, weather_state: 'sunny', one_liner: INITIAL_ONE_LINER, is_retired: false, survival_grade: '', event_log: [], last_active_date: today });
   },
 
   unretire() {
-    const today = getToday();
-    const saved = getState();
     set({ isRetired: false, survivalGrade: null });
-    if (saved) {
-      setState({ ...saved, isRetired: false, survivalGrade: null, date: today });
-    }
+    syncToSupabase({ is_retired: false, survival_grade: '' });
   },
 
-  hydrate() {
-    const saved = getState();
+  async hydrate() {
     const today = getToday();
-    if (!saved || saved.date !== today) {
+    const data = await fetchFromSupabase();
+
+    // 오늘 데이터가 없거나 날짜가 다르면 초기화
+    if (!data || data.last_active_date !== today) {
       get().resetDay();
       return;
     }
+
     const state = {
-      hp: saved.hp,
-      minHp: saved.minHp,
-      eventLog: saved.eventLog,
-      isRetired: saved.isRetired ?? false,
+      hp: data.hp ?? INITIAL_HP,
+      minHp: data.min_hp ?? INITIAL_HP,
+      eventLog: (data.event_log as EventLog[]) ?? [],
+      isRetired: data.is_retired ?? false,
       isViewingDashboard: false,
-      survivalGrade: saved.survivalGrade as SurvivalGrade | null,
-      weatherState: getWeatherState(saved.hp),
+      survivalGrade: (data.survival_grade as SurvivalGrade) || null,
+      weatherState: getWeatherState(data.hp ?? INITIAL_HP),
+      oneLiner: data.one_liner ?? INITIAL_ONE_LINER,
     };
     set(state);
     saveDayToHistory({
