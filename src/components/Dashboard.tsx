@@ -227,10 +227,7 @@ function Checklist() {
 
   // 앱 시작 시 Supabase에서만 불러오기
   useEffect(() => {
-    if (!userName || !team) {
-      setLoading(false); // userName/team 없으면 그냥 빈 상태로
-      return;
-    }
+    if (!userName || !team) return;
     const today = new Date().toISOString().slice(0, 10);
 
     supabase
@@ -240,11 +237,8 @@ function Checklist() {
       .eq('team', team)
       .single()
       .then(({ data, error }) => {
-        if (error) {
-          console.error('missions fetch error:', error);
-          setLoading(false);
-          return;
-        }
+        console.log('missions data:', data, 'error:', error);
+        if (error) { setLoading(false); return; }
         if (data?.last_active_date === today && Array.isArray(data.missions)) {
           setItems(data.missions as CheckItem[]);
         } else {
@@ -349,6 +343,7 @@ function Checklist() {
     </div>
   );
 }
+
 // ── Dashboard ───────────────────────────────────────────
 export function Dashboard() {
   return (
