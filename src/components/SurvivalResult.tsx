@@ -26,7 +26,6 @@ function useCountUp(target: number, duration = 1200) {
   return val;
 }
 
-// 등급별 색상은 디자인 의도상 고정값 사용 (토큰 시스템 외부)
 const GRADE_STYLES: Record<string, {
   bg: string; glow: string; textColor: string; particles: boolean; shake: boolean;
 }> = {
@@ -88,7 +87,8 @@ export function SurvivalResult() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.35 }}
-      className="min-h-screen flex flex-col p-4 pb-8"
+      className="flex flex-col p-4 pb-8 overflow-y-auto"
+      style={{ height: 'calc(100vh - var(--header-height) - var(--bottomnav-height))' }}
       data-testid="survival-result"
     >
       {/* 등급 카드 */}
@@ -223,11 +223,8 @@ export function SurvivalResult() {
       <motion.button
         type="button"
         onClick={handleViewDashboard}
-        className="w-full py-3 rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-text-primary)]"
-        style={{
-          background: 'var(--color-btn-primary-bg)',
-          color: 'var(--color-btn-primary-text)',
-        }}
+        className="w-full py-3 rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-text-primary)] mt-auto"
+        style={{ background: 'var(--color-btn-primary-bg)', color: 'var(--color-btn-primary-text)' }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.9 }}
