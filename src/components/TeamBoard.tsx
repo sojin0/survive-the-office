@@ -220,7 +220,7 @@ function SoloEmptyState() {
   );
 }
 
-export function TeamBoard() {
+export function TeamBoard({ onWeatherChange }: { onWeatherChange?: (w: WeatherState) => void }) {
   const [reactions, setReactionsState] = useState<Record<string, Record<string, number>>>({});
   const [showToast, setShowToast] = useState(false);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
@@ -297,6 +297,10 @@ export function TeamBoard() {
     [mergedMembers]
   );
 
+  useEffect(() => {
+    onWeatherChange?.(teamWeather);
+  }, [teamWeather, onWeatherChange]);
+  
   const setReaction = useCallback(async (toUserId: string, emoji: string) => {
     // toUserId는 Supabase row id — user_name으로 변환
     const toUserName = teamMembers.find((m) => m.id === toUserId)?.name;

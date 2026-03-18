@@ -5,6 +5,7 @@ import { useAppStore } from '../store/useAppStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { fetchReactionsForUser } from '../utils/reactions';
 import { supabase } from '../lib/supabase';
+import type { WeatherState } from '../types';
 
 function getTodayKey() { return new Date().toISOString().slice(0, 10); }
 
@@ -62,7 +63,7 @@ function getMonthStats(year: number, month: number, history: Record<string, any>
   return { maxHp, minHp, avgHp, dominantWeather, totalEvents, recordCount: records.length };
 }
 
-export function HistoryCalendar() {
+export function HistoryCalendar({ onWeatherChange }: { onWeatherChange?: (w: WeatherState) => void }) {
   const [year, setYear] = useState(() => new Date().getFullYear());
   const [month, setMonth] = useState(() => new Date().getMonth() + 1);
   const [selectedDate, setSelectedDate] = useState<string | null>(getTodayKey());
@@ -130,6 +131,11 @@ export function HistoryCalendar() {
   const selectedRecord = selectedDate === null ? null
     : selectedDate === todayKey ? todayData
     : history[selectedDate] ?? null;
+
+    useEffect(() => {
+      const w = selectedRecord?.weatherState ?? 'sunny';
+      onWeatherChange?.(w as WeatherState);
+    }, [selectedRecord, onWeatherChange]);
 
   const stats = useMemo(
     () => getMonthStats(year, month, history, todayKey, todayData),
