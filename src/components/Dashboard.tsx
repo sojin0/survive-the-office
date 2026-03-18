@@ -207,23 +207,6 @@ function DDayWidget() {
 
 // ── 체크리스트 ──────────────────────────────────────────
 type CheckItem = { id: string; text: string; done: boolean };
-const CHECKLIST_KEY = 'checklist_v1';
-const CHECKLIST_DATE_KEY = 'checklist_date_v1';
-
-function loadChecklistLocal(): CheckItem[] {
-  try {
-    const savedDate = localStorage.getItem(CHECKLIST_DATE_KEY);
-    const today = new Date().toISOString().slice(0, 10);
-    if (savedDate !== today) {
-      localStorage.removeItem(CHECKLIST_KEY);
-      localStorage.setItem(CHECKLIST_DATE_KEY, today);
-      return [];
-    }
-    return JSON.parse(localStorage.getItem(CHECKLIST_KEY) ?? '') as CheckItem[];
-  } catch {
-    return [];
-  }
-}
 
 async function saveMissionsToSupabase(missions: CheckItem[], userName: string, team: string) {
   await supabase
@@ -234,17 +217,17 @@ async function saveMissionsToSupabase(missions: CheckItem[], userName: string, t
 }
 
 function Checklist() {
-  const [items, setItems] = useState<CheckItem[]>(loadChecklistLocal);
+  const [items, setItems] = useState<CheckItem[]>([]);
   const [input, setInput] = useState('');
-  const [loaded, setLoaded] = useState(false);
+  const [loading, setLoading] = useState(true);
   const addEvent = useAppStore((s) => s.addEvent);
   const isRetired = useAppStore((s) => s.isRetired);
   const userName = useAuthStore((s) => s.userName);
   const team = useAuthStore((s) => s.team);
 
-  // 앱 시작 시 Supabase에서 불러오기
+  // 앱 시작 시 Supabase에서만 불러오기
   useEffect(() => {
-    if (!userName || !team || loaded) return;
+    if (!userName || !team) return;
     const today = new Date().toISOString().slice(0, 10);
 
     supabase
@@ -254,24 +237,21 @@ function Checklist() {
       .eq('team', team)
       .single()
       .then(({ data }) => {
-        if (data?.last_active_date === today && Array.isArray(data.missions) && data.missions.length > 0) {
-          // Supabase 데이터 우선
+        if (data?.last_active_date === today && Array.isArray(data.missions)) {
           setItems(data.missions as CheckItem[]);
-          localStorage.setItem(CHECKLIST_KEY, JSON.stringify(data.missions));
-          localStorage.setItem(CHECKLIST_DATE_KEY, today);
+        } else {
+          // 날짜가 다르면 빈 배열로 초기화
+          setItems([]);
+          saveMissionsToSupabase([], userName, team);
         }
-        setLoaded(true);
+        setLoading(false);
       });
-  }, [userName, team, loaded]);
+  }, [userName, team]);
 
   const save = (updated: CheckItem[]) => {
     setItems(updated);
-    // localStorage 저장
-    localStorage.setItem(CHECKLIST_KEY, JSON.stringify(updated));
-    localStorage.setItem(CHECKLIST_DATE_KEY, new Date().toISOString().slice(0, 10));
-    // Supabase 저장
     if (userName && team) saveMissionsToSupabase(updated, userName, team);
-    // 히스토리 저장
+    // 히스토리 저장 (로컬 히스토리용으로만 유지)
     const today = new Date().toISOString().slice(0, 10);
     const history = JSON.parse(localStorage.getItem('survive-office-history') ?? '{}');
     if (history[today]) {
@@ -301,6 +281,12 @@ function Checklist() {
   const remove = (id: string) => save(items.filter((i) => i.id !== id));
 
   const doneCount = items.filter((i) => i.done).length;
+
+  if (loading) return (
+    <div className="glass-card p-4 flex items-center justify-center h-full">
+      <p className="text-sm text-text-muted">불러오는 중...</p>
+    </div>
+  );
 
   return (
     <div className="glass-card p-4 flex flex-col gap-3 h-full">
