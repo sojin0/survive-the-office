@@ -116,7 +116,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const today = getToday();
     set({ isRetired: true, isViewingDashboard: false, survivalGrade: grade });
     saveDayToHistory({ date: today, hp, minHp, eventLog, weatherState, survivalGrade: grade });
-    syncToSupabase({ is_retired: true, survival_grade: grade });
+    syncToSupabase({ is_retired: true, survival_grade: grade, last_active_date: today }); // ← today 추가
   },
 
   viewDashboard() {
