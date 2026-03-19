@@ -70,7 +70,7 @@ export function HistoryCalendar({ onWeatherChange }: { onWeatherChange?: (w: Wea
   const [selectedDate, setSelectedDate] = useState<string | null>(getTodayKey());
   const [todayReactions, setTodayReactions] = useState<{ emoji: string; count: number }[]>([]);
 
-  const [history, setHistoryState] = useState(() => getHistory());
+  const [history, setHistoryState] = useState<ReturnType<typeof getHistory>>({});
   const calendarDays = useMemo(() => getCalendarDays(year, month), [year, month]);
   const todayKey = getTodayKey();
 
@@ -92,7 +92,7 @@ export function HistoryCalendar({ onWeatherChange }: { onWeatherChange?: (w: Wea
       .eq('team', team)
       .then(({ data }) => {
         if (!data || data.length === 0) return;
-        const merged = { ...getHistory() };
+        const merged: ReturnType<typeof getHistory> = {};
         data.forEach((row) => {
           merged[row.date] = {
             date: row.date,
