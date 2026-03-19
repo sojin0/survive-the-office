@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getHistory } from '../utils/storage';
+import { getHistory, setHistory, type DayRecord } from '../utils/storage';
 import { useAppStore } from '../store/useAppStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { fetchReactionsForUser } from '../utils/reactions';
@@ -70,7 +70,7 @@ export function HistoryCalendar({ onWeatherChange }: { onWeatherChange?: (w: Wea
   const [selectedDate, setSelectedDate] = useState<string | null>(getTodayKey());
   const [todayReactions, setTodayReactions] = useState<{ emoji: string; count: number }[]>([]);
 
-  const history = getHistory();
+  const [history, setHistoryState] = useState(() => getHistory());
   const calendarDays = useMemo(() => getCalendarDays(year, month), [year, month]);
   const todayKey = getTodayKey();
 
@@ -81,6 +81,33 @@ export function HistoryCalendar({ onWeatherChange }: { onWeatherChange?: (w: Wea
   const survivalGrade = useAppStore((s) => s.survivalGrade);
   const userName = useAuthStore((s) => s.userName);
   const team = useAuthStore((s) => s.team);
+
+  // Supabase에서 히스토리 로드 (모든 기기 동기화)
+  useEffect(() => {
+    if (!userName) return;
+    supabase
+      .from('user_history')
+      .select('date, hp, min_hp, weather_state, survival_grade, event_log, missions')
+      .eq('user_name', userName)
+      .eq('team', team)
+      .then(({ data }) => {
+        if (!data || data.length === 0) return;
+        const merged = { ...getHistory() };
+        data.forEach((row) => {
+          merged[row.date] = {
+            date: row.date,
+            hp: row.hp,
+            minHp: row.min_hp,
+            weatherState: row.weather_state,
+            survivalGrade: row.survival_grade ?? '',
+            eventLog: (row.event_log as DayRecord['eventLog']) ?? [],
+            missions: row.missions ?? [],
+          } as DayRecord;
+        });
+        setHistory(merged);
+        setHistoryState(merged);
+      });
+  }, [userName, team]);
 
   // 오늘 응원 실시간 로드
   useEffect(() => {

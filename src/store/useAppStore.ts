@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { EventLog, WeatherState, SurvivalGrade } from '../types';
 import { getWeatherState, getSurvivalGrade, clampHp, getLocalToday } from '../utils/hp';
-import { getState as getLocalState, saveDayToHistory, getAuth } from '../utils/storage';
+import { getState as getLocalState, saveDayToHistory, getHistory, getAuth, type DayRecord } from '../utils/storage';
 import { supabase } from '../lib/supabase';
 
 function getToday(): string {
@@ -26,6 +26,56 @@ async function syncToSupabase(patch: {
     .update({ ...patch, updated_at: new Date().toISOString() })
     .eq('user_name', auth.userName)
     .eq('team', auth.team ?? '');
+}
+
+async function syncHistoryDay(record: DayRecord) {
+  const auth = getAuth();
+  if (!auth?.userName) return;
+  await supabase
+    .from('user_history')
+    .upsert({
+      user_name: auth.userName,
+      team: auth.team ?? '',
+      date: record.date,
+      hp: record.hp,
+      min_hp: record.minHp,
+      weather_state: record.weatherState,
+      survival_grade: record.survivalGrade,
+      event_log: record.eventLog,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_name,team,date' });
+}
+
+function saveAndSync(record: DayRecord) {
+  saveDayToHistory(record);
+  syncHistoryDay(record);
+}
+
+const HISTORY_MIGRATED_KEY = 'history-migrated-v1';
+
+async function migrateLocalHistoryToSupabase() {
+  if (localStorage.getItem(HISTORY_MIGRATED_KEY)) return;
+  const auth = getAuth();
+  if (!auth?.userName) return;
+  const history = getHistory();
+  const records = Object.values(history);
+  if (records.length > 0) {
+    const rows = records.map((r) => ({
+      user_name: auth.userName,
+      team: auth.team ?? '',
+      date: r.date,
+      hp: r.hp,
+      min_hp: r.minHp,
+      weather_state: r.weatherState,
+      survival_grade: r.survivalGrade,
+      event_log: r.eventLog,
+      updated_at: new Date().toISOString(),
+    }));
+    await supabase
+      .from('user_history')
+      .upsert(rows, { onConflict: 'user_name,team,date' });
+  }
+  localStorage.setItem(HISTORY_MIGRATED_KEY, '1');
 }
 
 async function fetchFromSupabase() {
@@ -84,7 +134,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       : `${log.emoji} ${log.name}... 힘들다`;
     const today = getToday();
     set({ hp: newHp, minHp: newMin, eventLog: nextLog, weatherState, oneLiner: autoOneLiner });
-    saveDayToHistory({ date: today, hp: newHp, minHp: newMin, eventLog: nextLog, weatherState, survivalGrade: get().survivalGrade ?? '' });
+    saveAndSync({ date: today, hp: newHp, minHp: newMin, eventLog: nextLog, weatherState, survivalGrade: get().survivalGrade ?? '' });
     syncToSupabase({ hp: newHp, min_hp: newMin, weather_state: weatherState, one_liner: autoOneLiner, event_log: nextLog, last_active_date: today });
   },
 
@@ -102,7 +152,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const weatherState = getWeatherState(newHp);
     const today = getToday();
     set({ hp: newHp, minHp: newMin, eventLog: nextLog, weatherState });
-    saveDayToHistory({ date: today, hp: newHp, minHp: newMin, eventLog: nextLog, weatherState, survivalGrade: get().survivalGrade ?? '' });
+    saveAndSync({ date: today, hp: newHp, minHp: newMin, eventLog: nextLog, weatherState, survivalGrade: get().survivalGrade ?? '' });
     syncToSupabase({ hp: newHp, min_hp: newMin, weather_state: weatherState, event_log: nextLog, last_active_date: today });
   },
 
@@ -116,7 +166,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const grade = getSurvivalGrade(hp);
     const today = getToday();
     set({ isRetired: true, isViewingDashboard: false, survivalGrade: grade });
-    saveDayToHistory({ date: today, hp, minHp, eventLog, weatherState, survivalGrade: grade });
+    saveAndSync({ date: today, hp, minHp, eventLog, weatherState, survivalGrade: grade });
     syncToSupabase({ is_retired: true, survival_grade: grade, last_active_date: today }); // ← today 추가
   },
 
@@ -131,7 +181,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       eventLog: [], isRetired: false, isViewingDashboard: false,
       survivalGrade: null, minHp: INITIAL_HP, oneLiner: INITIAL_ONE_LINER,
     });
-    saveDayToHistory({ date: today, hp: INITIAL_HP, minHp: INITIAL_HP, eventLog: [], weatherState: 'sunny', survivalGrade: '' });
+    saveAndSync({ date: today, hp: INITIAL_HP, minHp: INITIAL_HP, eventLog: [], weatherState: 'sunny', survivalGrade: '' });
     syncToSupabase({ hp: INITIAL_HP, min_hp: INITIAL_HP, weather_state: 'sunny', one_liner: INITIAL_ONE_LINER, is_retired: false, survival_grade: '', event_log: [], missions: [], last_active_date: today });
   },
 
@@ -141,6 +191,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   async hydrate() {
+    await migrateLocalHistoryToSupabase();
     const today = getToday();
     const data = await fetchFromSupabase();
 
@@ -157,7 +208,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         oneLiner: data.one_liner ?? INITIAL_ONE_LINER,
       };
       set(state);
-      saveDayToHistory({
+      saveAndSync({
         date: today, hp: state.hp, minHp: state.minHp,
         eventLog: state.eventLog, weatherState: state.weatherState,
         survivalGrade: state.survivalGrade ?? '',
@@ -190,7 +241,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
           event_log: state.eventLog,
           last_active_date: today,
         });
-        saveDayToHistory({
+        saveAndSync({
           date: today, hp: state.hp, minHp: state.minHp,
           eventLog: state.eventLog, weatherState: state.weatherState,
           survivalGrade: state.survivalGrade ?? '',
