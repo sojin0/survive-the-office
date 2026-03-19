@@ -269,12 +269,19 @@ function Checklist() {
 
   const save = (updated: CheckItem[]) => {
     setItems(updated);
+    const today = getLocalToday();
     if (userName) {
       saveMissionsToSupabase(updated, userName, team);
-      localStorage.setItem(MISSIONS_DATE_KEY, getLocalToday());
+      localStorage.setItem(MISSIONS_DATE_KEY, today);
+      // user_history에도 미션 반영 (기록이 존재하는 경우에만 update)
+      supabase
+        .from('user_history')
+        .update({ missions: updated.map((i) => ({ text: i.text, done: i.done })), updated_at: new Date().toISOString() })
+        .eq('user_name', userName)
+        .eq('team', team)
+        .eq('date', today);
     }
     // 히스토리 저장 (로컬 히스토리용으로만 유지)
-    const today = getLocalToday();
     const history = JSON.parse(localStorage.getItem('survive-office-history') ?? '{}');
     if (history[today]) {
       history[today].missions = updated.map((i) => ({ text: i.text, done: i.done }));

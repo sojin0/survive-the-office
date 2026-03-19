@@ -42,6 +42,7 @@ async function syncHistoryDay(record: DayRecord) {
       weather_state: record.weatherState,
       survival_grade: record.survivalGrade,
       event_log: record.eventLog,
+      ...(record.reactions !== undefined && { reactions: record.reactions }),
       updated_at: new Date().toISOString(),
     }, { onConflict: 'user_name,team,date' });
 }
@@ -52,6 +53,7 @@ function saveAndSync(record: DayRecord) {
 }
 
 const HISTORY_MIGRATED_KEY = 'history-migrated-v1';
+const REACTIONS_MIGRATED_KEY = 'reactions-migrated-v1';
 
 async function migrateLocalHistoryToSupabase() {
   if (localStorage.getItem(HISTORY_MIGRATED_KEY)) return;
@@ -69,6 +71,8 @@ async function migrateLocalHistoryToSupabase() {
       weather_state: r.weatherState,
       survival_grade: r.survivalGrade,
       event_log: r.eventLog,
+      ...(r.missions && r.missions.length > 0 && { missions: r.missions }),
+      ...(r.reactions && r.reactions.length > 0 && { reactions: r.reactions }),
       updated_at: new Date().toISOString(),
     }));
     await supabase
@@ -76,6 +80,47 @@ async function migrateLocalHistoryToSupabase() {
       .upsert(rows, { onConflict: 'user_name,team,date' });
   }
   localStorage.setItem(HISTORY_MIGRATED_KEY, '1');
+}
+
+// reactions 테이블의 과거 데이터를 날짜별로 집계해 user_history에 소급 적용
+async function migrateReactionsToHistory() {
+  if (localStorage.getItem(REACTIONS_MIGRATED_KEY)) return;
+  const auth = getAuth();
+  if (!auth?.userName) return;
+
+  const { data } = await supabase
+    .from('reactions')
+    .select('emoji, created_at')
+    .eq('to_user', auth.userName)
+    .eq('team', auth.team ?? '');
+
+  if (!data || data.length === 0) {
+    localStorage.setItem(REACTIONS_MIGRATED_KEY, '1');
+    return;
+  }
+
+  // created_at 기준으로 로컬 날짜별 집계
+  const byDate: Record<string, Record<string, number>> = {};
+  data.forEach(({ emoji, created_at }) => {
+    const d = new Date(created_at);
+    const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    if (!byDate[dateKey]) byDate[dateKey] = {};
+    byDate[dateKey][emoji] = (byDate[dateKey][emoji] ?? 0) + 1;
+  });
+
+  const rows = Object.entries(byDate).map(([date, counts]) => ({
+    user_name: auth.userName,
+    team: auth.team ?? '',
+    date,
+    reactions: Object.entries(counts).map(([emoji, count]) => ({ emoji, count })),
+    updated_at: new Date().toISOString(),
+  }));
+
+  await supabase
+    .from('user_history')
+    .upsert(rows, { onConflict: 'user_name,team,date' });
+
+  localStorage.setItem(REACTIONS_MIGRATED_KEY, '1');
 }
 
 async function fetchFromSupabase() {
@@ -102,7 +147,7 @@ type AppStore = {
   addEvent: (log: Omit<EventLog, 'id'>) => void;
   removeEvent: (id: string) => void;
   setOneLiner: (text: string) => void;
-  retire: () => void;
+  retire: () => Promise<void>;
   viewDashboard: () => void;
   resetDay: () => void;
   unretire: () => void;
@@ -161,13 +206,35 @@ export const useAppStore = create<AppStore>((set, get) => ({
     syncToSupabase({ one_liner: text });
   },
 
-  retire() {
+  async retire() {
     const { hp, minHp, eventLog, weatherState } = get();
     const grade = getSurvivalGrade(hp);
     const today = getToday();
+    const auth = getAuth();
     set({ isRetired: true, isViewingDashboard: false, survivalGrade: grade });
-    saveAndSync({ date: today, hp, minHp, eventLog, weatherState, survivalGrade: grade });
-    syncToSupabase({ is_retired: true, survival_grade: grade, last_active_date: today }); // ← today 추가
+
+    // 퇴근 시 오늘 팀원 응원 스냅샷 조회 후 history에 함께 저장
+    let reactions: { emoji: string; count: number }[] = [];
+    if (auth?.userName) {
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+      const { data } = await supabase
+        .from('reactions')
+        .select('emoji')
+        .eq('to_user', auth.userName)
+        .eq('team', auth.team ?? '')
+        .gte('created_at', startOfDay.toISOString());
+      if (data) {
+        const counts = data.reduce<Record<string, number>>((acc, r) => {
+          acc[r.emoji] = (acc[r.emoji] ?? 0) + 1;
+          return acc;
+        }, {});
+        reactions = Object.entries(counts).map(([emoji, count]) => ({ emoji, count }));
+      }
+    }
+
+    saveAndSync({ date: today, hp, minHp, eventLog, weatherState, survivalGrade: grade, reactions });
+    syncToSupabase({ is_retired: true, survival_grade: grade, last_active_date: today });
   },
 
   viewDashboard() {
@@ -192,6 +259,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   async hydrate() {
     await migrateLocalHistoryToSupabase();
+    await migrateReactionsToHistory();
     const today = getToday();
     const data = await fetchFromSupabase();
 

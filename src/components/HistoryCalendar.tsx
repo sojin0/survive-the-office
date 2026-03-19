@@ -87,7 +87,7 @@ export function HistoryCalendar({ onWeatherChange }: { onWeatherChange?: (w: Wea
     if (!userName) return;
     supabase
       .from('user_history')
-      .select('date, hp, min_hp, weather_state, survival_grade, event_log, missions')
+      .select('date, hp, min_hp, weather_state, survival_grade, event_log, missions, reactions')
       .eq('user_name', userName)
       .eq('team', team)
       .then(({ data }) => {
@@ -102,6 +102,7 @@ export function HistoryCalendar({ onWeatherChange }: { onWeatherChange?: (w: Wea
             survivalGrade: row.survival_grade ?? '',
             eventLog: (row.event_log as DayRecord['eventLog']) ?? [],
             missions: row.missions ?? [],
+            reactions: row.reactions ?? [],
           } as DayRecord;
         });
         setHistory(merged);
