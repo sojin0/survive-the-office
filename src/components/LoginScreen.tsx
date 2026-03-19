@@ -207,7 +207,7 @@ export function LoginScreen() {
                         <button type="button" onClick={() => setTeamMode('custom')}
                           className="text-sm text-center py-2 rounded-lg transition-all text-text-secondary hover:opacity-70"
                           style={{ background: 'rgba(0,0,0,0.05)' }}>
-                          🏷️ 원하는 팀 만들기
+                          🏷️ 원하는 팀 만들기·참여하기
                         </button>
                       </motion.div>
                     ) : (
